@@ -248,10 +248,10 @@ function drawAllDims(ctx){
     const s=worldToScreen(r.x,r.y),rw=r.w*TK.zoom,rh=r.h*TK.zoom;
     const wt=(r.wallThickness||TK.wallThickness||0.1),hwt=wt*TK.scale*TK.zoom/2;
     if(TK.showOuterDims){
-      dimLine(s.x-hwt,s.y-hwt,s.x+rw+hwt,s.y-hwt,((r.w/TK.scale)+wt).toFixed(2)+'m',-r.dimOffsets.top,0,-1,r.id,'room-top');
+      dimLine(s.x-hwt,s.y-hwt,s.x+rw+hwt,s.y-hwt,((r.w/TK.scale)+wt).toFixed(2)+'m',r.dimOffsets.top,0,-1,r.id,'room-top');
       dimLine(s.x+rw+hwt,s.y-hwt,s.x+rw+hwt,s.y+rh+hwt,((r.h/TK.scale)+wt).toFixed(2)+'m',r.dimOffsets.right,1,0,r.id,'room-right');
       dimLine(s.x-hwt,s.y+rh+hwt,s.x+rw+hwt,s.y+rh+hwt,((r.w/TK.scale)+wt).toFixed(2)+'m',r.dimOffsets.bottom,0,1,r.id,'room-bottom');
-      dimLine(s.x-hwt,s.y-hwt,s.x-hwt,s.y+rh+hwt,((r.h/TK.scale)+wt).toFixed(2)+'m',-r.dimOffsets.left,-1,0,r.id,'room-left');
+      dimLine(s.x-hwt,s.y-hwt,s.x-hwt,s.y+rh+hwt,((r.h/TK.scale)+wt).toFixed(2)+'m',r.dimOffsets.left,-1,0,r.id,'room-left');
     }
     if(TK.showInnerDims){
       const iw=rw-wt*TK.scale*TK.zoom,ih=rh-wt*TK.scale*TK.zoom;
