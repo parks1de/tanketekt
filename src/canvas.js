@@ -11,6 +11,20 @@ setTimeout(resize,60);
 window.worldToScreen=(wx,wy)=>({x:wx*TK.zoom+TK.panX,y:wy*TK.zoom+TK.panY});
 window.screenToWorld=(sx,sy)=>({x:(sx-TK.panX)/TK.zoom,y:(sy-TK.panY)/TK.zoom});
 
+function isEdgeJoined(r,edge){
+  const tol=4;
+  return TK.rooms.some(r2=>{
+    if(r2.id===r.id)return false;
+    const yOv=r2.y<r.y+r.h-tol&&r2.y+r2.h>r.y+tol;
+    const xOv=r2.x<r.x+r.w-tol&&r2.x+r2.w>r.x+tol;
+    if(edge==='right')return Math.abs((r.x+r.w)-r2.x)<tol&&yOv;
+    if(edge==='left')return Math.abs(r.x-(r2.x+r2.w))<tol&&yOv;
+    if(edge==='bottom')return Math.abs((r.y+r.h)-r2.y)<tol&&xOv;
+    if(edge==='top')return Math.abs(r.y-(r2.y+r2.h))<tol&&xOv;
+    return false;
+  });
+}
+
 function drawArrow(x1,y1,x2,y2,lbl){
   ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
   const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);if(len<2)return;
@@ -61,21 +75,28 @@ function redraw(){
     const sel=r.id===TK.selectedId;
     ctx.fillStyle=type.color+'33';ctx.fillRect(s.x,s.y,rw,rh);
     
-    // Draw room walls with thickness
+    // Draw room walls — auto-join merges shared edges into thin separators
     const rwt=(r.wallThickness||TK.wallThickness||0.1)*TK.scale*TK.zoom;
-    const hwt=rwt/2; // half wall thickness in screen px
-    const wallCol=sel?'rgba(233,69,96,0.85)':'#2d2d2d';
-    // Fill outer bounding box (merges all 4 corners perfectly)
+    const hwt=rwt/2;
+    const inMulti=TK.selectedIds&&TK.selectedIds.includes(r.id)&&!sel;
+    const wallCol=sel?'rgba(233,69,96,0.85)':inMulti?'rgba(35,134,54,0.8)':'#2d2d2d';
+    const innerW=rw-rwt,innerH=rh-rwt;
+    const jT=isEdgeJoined(r,'top'),jR=isEdgeJoined(r,'right'),jB=isEdgeJoined(r,'bottom'),jL=isEdgeJoined(r,'left');
     ctx.fillStyle=wallCol;
-    ctx.fillRect(s.x-hwt,s.y-hwt,rw+rwt,rh+rwt);
-    // Cut inner area with room fill
-    const innerW=rw-rwt, innerH=rh-rwt;
-    if(innerW>0&&innerH>0){
-      ctx.fillStyle='#f5f5f5';
-      ctx.fillRect(s.x+hwt,s.y+hwt,innerW,innerH);
-    }
-    // Selection outline
+    ctx.fillRect(s.x-hwt,s.y-hwt,rwt,rwt);ctx.fillRect(s.x+rw-hwt,s.y-hwt,rwt,rwt);
+    ctx.fillRect(s.x+rw-hwt,s.y+rh-hwt,rwt,rwt);ctx.fillRect(s.x-hwt,s.y+rh-hwt,rwt,rwt);
+    if(!jT&&innerW>0)ctx.fillRect(s.x+hwt,s.y-hwt,innerW,rwt);
+    if(!jR&&innerH>0)ctx.fillRect(s.x+rw-hwt,s.y+hwt,rwt,innerH);
+    if(!jB&&innerW>0)ctx.fillRect(s.x+hwt,s.y+rh-hwt,innerW,rwt);
+    if(!jL&&innerH>0)ctx.fillRect(s.x-hwt,s.y+hwt,rwt,innerH);
+    if(innerW>0&&innerH>0){ctx.fillStyle='#f5f5f5';ctx.fillRect(s.x+hwt,s.y+hwt,innerW,innerH);}
+    ctx.strokeStyle='#bbb';ctx.lineWidth=1;ctx.setLineDash([]);
+    if(jT&&innerW>0){ctx.beginPath();ctx.moveTo(s.x+hwt,s.y);ctx.lineTo(s.x+rw-hwt,s.y);ctx.stroke();}
+    if(jR&&innerH>0){ctx.beginPath();ctx.moveTo(s.x+rw,s.y+hwt);ctx.lineTo(s.x+rw,s.y+rh-hwt);ctx.stroke();}
+    if(jB&&innerW>0){ctx.beginPath();ctx.moveTo(s.x+hwt,s.y+rh);ctx.lineTo(s.x+rw-hwt,s.y+rh);ctx.stroke();}
+    if(jL&&innerH>0){ctx.beginPath();ctx.moveTo(s.x,s.y+hwt);ctx.lineTo(s.x,s.y+rh-hwt);ctx.stroke();}
     if(sel){ctx.strokeStyle='#e94560';ctx.lineWidth=2;ctx.strokeRect(s.x-hwt,s.y-hwt,rw+rwt,rh+rwt);}
+    else if(inMulti){ctx.strokeStyle='#238636';ctx.lineWidth=2;ctx.strokeRect(s.x-hwt,s.y-hwt,rw+rwt,rh+rwt);}
     if(TK.showRoomLabels&&rw>40){ctx.fillStyle='#222';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.name,s.x+rw/2,s.y+rh/2-(TK.showAreaLabels?8:0));}
     if(TK.showAreaLabels&&rw>50){const a=(r.w*r.h/TK.scale/TK.scale).toFixed(2)+' m²';ctx.fillStyle='#666';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(a,s.x+rw/2,s.y+rh/2+(TK.showRoomLabels?8:0));}
     if(sel){

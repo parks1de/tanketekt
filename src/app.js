@@ -15,7 +15,7 @@ window.cascadeDelete=(id,type)=>{
   if(window.updateElementList)updateElementList();
   if(window.redraw)redraw();
 };
-window.TK={ghostObject:null,rooms:[],walls:[],doors:[],windows:[],history:[],redoStack:[],scale:100,zoom:1.0,panX:0,panY:0,showGrid:true,showOuterDims:true,showInnerDims:false,showAreaLabels:true,showRoomLabels:true,selectedId:null,selectedType:null,currentTool:'draw',wallThickness:0.198,nextId:1,clipboard:null,showNorthArrow:true}
+window.TK={ghostObject:null,rooms:[],walls:[],doors:[],windows:[],history:[],redoStack:[],scale:100,zoom:1.0,panX:0,panY:0,showGrid:true,showOuterDims:true,showInnerDims:false,showAreaLabels:true,showRoomLabels:true,selectedId:null,selectedType:null,selectedIds:[],currentTool:'draw',wallThickness:0.198,nextId:1,clipboard:null,snapToGrid:false}
 window.TK_ROOM_TYPES=[{id:'stove',name:'Stove',color:'#4a90d9',minArea:15},{id:'soverom',name:'Soverom',color:'#7b68ee',minArea:7},{id:'kjokken',name:'Kjøken',color:'#e8a838',minArea:6},{id:'bad',name:'Bad/WC',color:'#4ecdc4',minArea:2.5},{id:'gang',name:'Gang/Entre',color:'#95a5a6',minArea:0},{id:'bod',name:'Bod',color:'#a0826d',minArea:0},{id:'kontor',name:'Kontor',color:'#5dade2',minArea:0},{id:'anna',name:'Anna',color:'#aaaaaa',minArea:0}]
 window.px2m=(px)=>(px/TK.scale).toFixed(2)
 window.roomArea=(r)=>(r.w*r.h/(TK.scale*TK.scale)).toFixed(2)
@@ -42,7 +42,12 @@ window.updateWallList=()=>{
 window.autoSave=()=>{try{localStorage.setItem('tanketekt_autosave',JSON.stringify({rooms:TK.rooms,walls:TK.walls,doors:TK.doors,windows:TK.windows,scale:TK.scale,savedAt:Date.now()}))}catch(e){}}
 window.loadFromLocalStorage=()=>{try{const d=localStorage.getItem('tanketekt_autosave');if(!d)return;const s=JSON.parse(d);const age=Math.round((Date.now()-s.savedAt)/60000);if(confirm('Gjenopprette sist lagra økt ('+age+' min sidan)?')){TK.rooms=s.rooms||[];TK.walls=s.walls||[];TK.doors=s.doors||[];TK.windows=s.windows||[];TK.scale=s.scale||100;updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw();setStatus('Økt gjenoppretta!')}}catch(e){}}
 window.redraw=()=>{}
-window.deleteSelected=()=>{if(!TK.selectedId)return;saveSnapshot();cascadeDelete(TK.selectedId,TK.selectedType);}
+window.deleteSelected=()=>{
+  const ids=[...new Set([TK.selectedId,...(TK.selectedIds||[])].filter(Boolean))];
+  if(!ids.length)return;saveSnapshot();
+  ids.forEach(id=>{const type=TK.rooms.find(x=>x.id===id)?'room':TK.walls.find(x=>x.id===id)?'wall':(TK.selectedType||'room');cascadeDelete(id,type);});
+  TK.selectedIds=[];
+};
 window.copySelected=()=>{const r=TK.rooms.find(x=>x.id===TK.selectedId);if(r){TK.clipboard=JSON.parse(JSON.stringify(r));setStatus('Kopiert!')}}
 window.pasteClipboard=()=>{if(!TK.clipboard)return;saveSnapshot();const c={...TK.clipboard,id:TK.nextId++,x:TK.clipboard.x+TK.scale*0.5,y:TK.clipboard.y+TK.scale*0.5};TK.rooms.push(c);updateSidebar();if(window.redraw)redraw()}
 window.placeDoor=()=>{}
@@ -76,7 +81,7 @@ window.promptRoomDims=()=>{
     if(window.setStatus)setStatus('Rom plassert — dra for å flytte');
   };
 };
-window.setVisibility=function(key,val){if(key==='grid')TK.showGrid=val;else if(key==='outer')TK.showOuterDims=val;else if(key==='inner')TK.showInnerDims=val;else if(key==='area')TK.showAreaLabels=val;else if(key==='labels')TK.showRoomLabels=val;if(window.redraw)redraw();};
+window.setVisibility=function(key,val){if(key==='grid')TK.showGrid=val;else if(key==='outer')TK.showOuterDims=val;else if(key==='inner')TK.showInnerDims=val;else if(key==='area')TK.showAreaLabels=val;else if(key==='labels')TK.showRoomLabels=val;else if(key==='snap')TK.snapToGrid=val;if(window.redraw)redraw();};
 window.setWallThickness=function(val){TK.wallThickness=val/100;};
 window.newProject=function(){if(confirm('Nytt prosjekt? Ulagra endringar går tapt.')){TK.rooms=[];TK.walls=[];TK.doors=[];TK.windows=[];TK.selectedId=null;TK.history=[];TK.redoStack=[];localStorage.removeItem('tanketekt_autosave');updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw();setStatus('Nytt prosjekt klart');}};
 window.showHelpModal=function(){var ov=document.createElement('div');ov.className='modal-overlay';ov.innerHTML='<div class="modal"><h2>Hjelp — TankeTekt</h2><p><b>Teikn rom:</b> klikk og dra på brettet</p><p><b>Teikn vegg:</b> vel "Teikn vegg", klikk og dra</p><p><b>Dør/Vindauge:</b> klikk knapp, klikk på vegg</p><p><b>Flytt:</b> vel element, dra i kroppen</p><p><b>Endre storleik rom:</b> vel rom, dra i hjørnehandtaka</p><p><b>Endre namn/type:</b> dobbelklikk på rom</p><p><b>Slett:</b> vel element, trykk Delete</p><p><b>Angre/Gjer om:</b> Ctrl+Z / Ctrl+Y</p><p><b>Zoom:</b> scroll-hjul | <b>Pan:</b> Alt+dra</p><div class="modal-btns"><button onclick="this.closest(\'.modal-overlay\').remove()">Lukk</button></div></div>';document.body.appendChild(ov);};

@@ -225,6 +225,7 @@ body{display:flex;flex-direction:column;}
       <label><input type="checkbox" id="chkInner" checked onchange="if(window.setVisibility)setVisibility('inner',this.checked)"> Indre veggar</label>
       <label><input type="checkbox" id="chkArea" checked onchange="if(window.setVisibility)setVisibility('area',this.checked)"> Areal</label>
       <label><input type="checkbox" id="chkLabels" checked onchange="if(window.setVisibility)setVisibility('labels',this.checked)"> Etiketter</label>
+      <label><input type="checkbox" id="chkSnap" onchange="if(window.setVisibility)setVisibility('snap',this.checked)"> Rutenett-snap</label>
     </div>
   </div>
 
@@ -322,6 +323,19 @@ function setStatus(msg){
  'loadProject','exportPNG','exportPDF','showHelpModal'].forEach(function(fn){
   if(!window[fn]) window[fn] = function(){ console.warn(fn + ' not yet loaded'); };
 });
+</script>
+
+<!-- MOBILE GUARD -->
+<div id="mobileMsg" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0d1117;z-index:9999;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:2rem;">
+  <div style="font-size:2rem;margin-bottom:1rem">🖥️</div>
+  <h2 style="color:#c9d1d9;margin-bottom:0.75rem;font-size:1.1rem">TankeTekt</h2>
+  <p style="color:#8b949e;max-width:320px;line-height:1.7;font-size:0.9rem">Denne applikasjonen krev eit skrivebordsskjerm for å fungere skikkeleg. Opne TankeTekt på ein PC eller Mac for å teikne planar.</p>
+</div>
+<script>
+(function(){
+  function chkMobile(){var m=window.innerWidth<768;var el=document.getElementById('mobileMsg');if(el)el.style.display=m?'flex':'none';}
+  chkMobile();window.addEventListener('resize',chkMobile);
+})();
 </script>
 
 <!-- APP SCRIPTS (load order required) -->

@@ -88,67 +88,117 @@ window.exportPDF=function(){
 function _doExportPDF(opts){
   var jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
   if(!jsPDFCtor){if(window.showToast)showToast('jsPDF ikkje tilgjengeleg','error');return;}
-  // Temporarily apply PDF display settings
-  var saved={grid:TK.showGrid,outer:TK.showOuterDims,inner:TK.showInnerDims,labels:TK.showRoomLabels,area:TK.showAreaLabels};
+
+  // ── 1. Compute tight content bounding box in world coords ────────────────
+  var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  TK.rooms.forEach(function(r){
+    var wt=(r.wallThickness||TK.wallThickness||0.1)*TK.scale;
+    minX=Math.min(minX,r.x-wt/2);minY=Math.min(minY,r.y-wt/2);
+    maxX=Math.max(maxX,r.x+r.w+wt/2);maxY=Math.max(maxY,r.y+r.h+wt/2);
+  });
+  TK.walls.forEach(function(w){
+    var hw=w.thickness*TK.scale/2;
+    minX=Math.min(minX,Math.min(w.x1,w.x2)-hw);minY=Math.min(minY,Math.min(w.y1,w.y2)-hw);
+    maxX=Math.max(maxX,Math.max(w.x1,w.x2)+hw);maxY=Math.max(maxY,Math.max(w.y1,w.y2)+hw);
+  });
+  if(!isFinite(minX)){if(window.showToast)showToast('Ingen innhald å eksportere','error');return;}
+  var dimPad=(opts.outer||opts.inner)?70:15;
+  minX-=dimPad;minY-=dimPad;maxX+=dimPad;maxY+=dimPad;
+  var bw=maxX-minX,bh=maxY-minY;
+
+  // ── 2. Render canvas cropped to content ─────────────────────────────────
+  var cv=document.getElementById('floorplan');
+  var savedZoom=TK.zoom,savedPanX=TK.panX,savedPanY=TK.panY,savedSel=TK.selectedId,savedSelIds=TK.selectedIds.slice();
+  TK.selectedId=null;TK.selectedIds=[];
+  var fitZoom=Math.min(cv.width/bw,cv.height/bh)*0.98;
+  TK.zoom=fitZoom;
+  TK.panX=(cv.width-bw*fitZoom)/2-minX*fitZoom;
+  TK.panY=(cv.height-bh*fitZoom)/2-minY*fitZoom;
+  var savedDisp={grid:TK.showGrid,outer:TK.showOuterDims,inner:TK.showInnerDims,labels:TK.showRoomLabels,area:TK.showAreaLabels};
   TK.showGrid=opts.grid;TK.showOuterDims=opts.outer;TK.showInnerDims=opts.inner;TK.showRoomLabels=opts.labels;TK.showAreaLabels=opts.area;
   if(window.redraw)redraw();
-  var cv=document.getElementById('floorplan');
-  var imgData=cv.toDataURL('image/jpeg',0.95);
+  var imgData=cv.toDataURL('image/jpeg',0.97);
   var cw=cv.width,ch=cv.height;
-  // Restore settings
-  TK.showGrid=saved.grid;TK.showOuterDims=saved.outer;TK.showInnerDims=saved.inner;TK.showRoomLabels=saved.labels;TK.showAreaLabels=saved.area;
+  TK.zoom=savedZoom;TK.panX=savedPanX;TK.panY=savedPanY;TK.selectedId=savedSel;TK.selectedIds=savedSelIds;
+  TK.showGrid=savedDisp.grid;TK.showOuterDims=savedDisp.outer;TK.showInnerDims=savedDisp.inner;TK.showRoomLabels=savedDisp.labels;TK.showAreaLabels=savedDisp.area;
   if(window.redraw)redraw();
 
+  // ── 3. Build PDF ─────────────────────────────────────────────────────────
   var orient=cw>=ch?'landscape':'portrait';
   var pdf=new jsPDFCtor({orientation:orient,unit:'mm',format:'a3'});
-  var pw=pdf.internal.pageSize.getWidth();
-  var ph=pdf.internal.pageSize.getHeight();
-  var M=12; // margin
+  var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+  var M=12;
 
   // Header
-  pdf.setFontSize(13);pdf.setFont(undefined,'bold');
-  pdf.text('TankeTekt — Planteikning',M,M+6);
-  pdf.setFontSize(8);pdf.setFont(undefined,'normal');
-  pdf.setTextColor(100);
-  var dateStr=new Date().toLocaleDateString('no-NO');
-  var meta='Dato: '+dateStr;
-  if(opts.drawer)meta+='   |   Teikna av: '+opts.drawer;
-  pdf.text(meta,M,M+12);
-  pdf.setTextColor(0);
-  var headerH=M+16;
+  pdf.setFontSize(12);pdf.setFont(undefined,'bold');
+  pdf.text('Planteikning',M,M+6);
+  pdf.setFontSize(8);pdf.setFont(undefined,'normal');pdf.setTextColor(100);
+  var meta='Dato: '+new Date().toLocaleDateString('no-NO');
+  if(opts.drawer)meta+='     Teikna av: '+opts.drawer;
+  pdf.text(meta,M,M+12);pdf.setTextColor(0);
+  pdf.setLineWidth(0.3);pdf.line(M,M+15,pw-M,M+15);
+  var headerH=M+19;
 
-  // Room table at bottom
-  var tableH=0;
+  // ── 4. Choose clean scale ratio ──────────────────────────────────────────
+  var stdScales=[5,10,20,25,50,75,100,125,150,200,250,500,1000];
+  var tableRows=[];
   if(opts.table&&TK.rooms.length){
-    var rows=TK.rooms.map(function(r){
+    tableRows=TK.rooms.map(function(r){
       var type=(window.TK_ROOM_TYPES||[]).find(function(t){return t.id===r.type;})||{name:'Anna'};
-      var area=(r.w*r.h/TK.scale/TK.scale).toFixed(2);
-      return [r.name,type.name,area+' m²'];
-    });
-    var rowH=6,colW=[60,40,28];
-    tableH=(rows.length+1)*rowH+6;
-    var ty=ph-M-tableH;
-    pdf.setFontSize(8);pdf.setFont(undefined,'bold');
-    pdf.text('Romtabell',M,ty);
-    ty+=5;
-    var hdrs=['Namn','Type','Areal'];
-    var cx=M;
-    hdrs.forEach(function(h,i){pdf.text(h,cx,ty);cx+=colW[i];});
-    pdf.setLineWidth(0.3);pdf.line(M,ty+1,M+colW[0]+colW[1]+colW[2],ty+1);
-    pdf.setFont(undefined,'normal');
-    rows.forEach(function(row){
-      ty+=rowH;cx=M;
-      row.forEach(function(cell,i){pdf.text(cell,cx,ty);cx+=colW[i];});
+      return [r.name,type.name,(r.w*r.h/TK.scale/TK.scale).toFixed(2)+' m²'];
     });
   }
+  var tableH=tableRows.length?(tableRows.length*6+16):0;
+  var scaleBarH=8;
+  var imgAreaW=pw-M*2;
+  var imgAreaH=ph-headerH-M-tableH-(tableH?6:0)-scaleBarH-4;
+  // Content size in meters
+  var contentW_m=bw/TK.scale,contentH_m=bh/TK.scale;
+  // Find smallest N where content fits: contentW_m*1000/N <= imgAreaW
+  var N=stdScales.find(function(n){return contentW_m*1000/n<=imgAreaW&&contentH_m*1000/n<=imgAreaH;});
+  if(!N)N=stdScales[stdScales.length-1];
+  // Image size at scale 1:N (content portion), then full image slightly larger due to fitZoom margin
+  var contentPDFW=contentW_m*1000/N;
+  var contentPDFH=contentH_m*1000/N;
+  var imgPDFW=contentPDFW*(cw/(bw*fitZoom));
+  var imgPDFH=contentPDFH*(ch/(bh*fitZoom));
+  var ox=(pw-imgPDFW)/2;
+  var oy=headerH;
+  pdf.addImage(imgData,'JPEG',ox,oy,imgPDFW,imgPDFH);
+  // Thin border around drawing
+  pdf.setLineWidth(0.2);pdf.setDrawColor(180);
+  pdf.rect(ox,oy,imgPDFW,imgPDFH);pdf.setDrawColor(0);
 
-  // Floor plan image
-  var imgY=headerH;
-  var imgMaxH=ph-headerH-M-tableH-(tableH>0?4:0);
-  var ratio=Math.min((pw-M*2)/cw,imgMaxH/ch);
-  var iw=cw*ratio,ih=ch*ratio;
-  var ox=(pw-iw)/2;
-  pdf.addImage(imgData,'JPEG',ox,imgY,iw,ih);
+  // ── 5. Scale bar ─────────────────────────────────────────────────────────
+  var sbY=oy+imgPDFH+4;
+  // Choose scale bar real length (target ~20mm on drawing)
+  var sbNice=[0.1,0.25,0.5,1,2,5,10,20,50,100];
+  var sbTarget=20*N/1000;
+  var sbRealM=sbNice.reduce(function(p,c){return Math.abs(c-sbTarget)<Math.abs(p-sbTarget)?c:p;});
+  var sbW=sbRealM*1000/N;
+  var sbX=ox;
+  pdf.setLineWidth(0.5);pdf.setDrawColor(0);
+  pdf.line(sbX,sbY,sbX+sbW,sbY);
+  pdf.line(sbX,sbY-1.5,sbX,sbY+1.5);pdf.line(sbX+sbW,sbY-1.5,sbX+sbW,sbY+1.5);
+  pdf.setFontSize(7);pdf.setFont(undefined,'normal');
+  var sbLabel=sbRealM>=1?sbRealM+'m':(sbRealM*100).toFixed(0)+'cm';
+  pdf.text(sbLabel,sbX+sbW/2,sbY+4,{align:'center'});
+  pdf.setFontSize(8);pdf.text('1 : '+N,sbX+sbW+6,sbY+1);
+
+  // ── 6. Room table ─────────────────────────────────────────────────────────
+  if(tableRows.length){
+    var ty=ph-M-tableRows.length*6-12;
+    pdf.setFontSize(8);pdf.setFont(undefined,'bold');pdf.text('Romtabell',M,ty);ty+=5;
+    var colW=[65,40,28];var hdrs=['Romnamn','Type','Areal'];var cx=M;
+    hdrs.forEach(function(h,i){pdf.text(h,cx,ty);cx+=colW[i];});
+    pdf.setLineWidth(0.2);pdf.line(M,ty+1,M+colW[0]+colW[1]+colW[2],ty+1);
+    pdf.setFont(undefined,'normal');
+    tableRows.forEach(function(row){ty+=6;cx=M;row.forEach(function(cell,i){pdf.text(cell,cx,ty);cx+=colW[i];});});
+    // Total area
+    var totalArea=TK.rooms.reduce(function(s,r){return s+r.w*r.h/TK.scale/TK.scale;},0);
+    ty+=6;pdf.setFont(undefined,'bold');pdf.text('BRA totalt',M,ty);
+    pdf.setFont(undefined,'normal');pdf.text(totalArea.toFixed(2)+' m²',M+colW[0]+colW[1],ty);
+  }
 
   pdf.save('tanketekt.pdf');
   if(window.showToast)showToast('PDF lasta ned!','success');
