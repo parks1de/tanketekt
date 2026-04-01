@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       window.redraw(); return;
     }
     if(TK._resize){
+      document.getElementById('floorplan').style.cursor=TK._resize.h.cursor;
       const dx=(e.offsetX-TK._resize.startX)/TK.zoom,dy=(e.offsetY-TK._resize.startY)/TK.zoom;
       const r=TK.rooms.find(x=>x.id===TK.selectedId);if(!r)return;
       const o=TK._resize.orig,c=TK._resize.h.cursor;
@@ -195,11 +196,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     {const cvEl=document.getElementById('floorplan');
     let cur='crosshair';
     if(TK._moveEl)cur='grabbing';
+    else if(TK._resize)cur=TK._resize.h.cursor;
     else if(TK.selectedId&&TK.selectedType==='room'){
       const r3=TK.rooms.find(x=>x.id===TK.selectedId);
       if(r3&&window.getResizeHandle){const hh=window.getResizeHandle(r3,e.offsetX,e.offsetY);if(hh)cur=hh.cursor;}
       if(cur==='crosshair'&&r3){const wo3=window.screenToWorld(e.offsetX,e.offsetY);if(wo3.x>r3.x&&wo3.x<r3.x+r3.w&&wo3.y>r3.y&&wo3.y<r3.y+r3.h)cur='grab';}
     }
+    if(cur==='crosshair'){const wo3=window.screenToWorld(e.offsetX,e.offsetY);if(TK.rooms.some(r=>wo3.x>r.x&&wo3.x<r.x+r.w&&wo3.y>r.y&&wo3.y<r.y+r.h))cur='move';}
     if(cur==='crosshair'&&window._dimHitAreas){if(window._dimHitAreas.some(h=>Math.hypot(e.offsetX-h.hx,e.offsetY-h.hy)<h.r+8))cur='ns-resize';}
     cvEl.style.cursor=cur;}
   });

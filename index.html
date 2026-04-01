@@ -204,11 +204,13 @@ body{display:flex;flex-direction:column;}
 <div id="toolbar">
 
   <select id="wallThicknessSelect" title="Veggtykkelse" onchange="if(window.setWallThickness)setWallThickness(parseInt(this.value))">
-    <option value="10">10 cm</option>
-    <option value="15" selected>15 cm</option>
-    <option value="20">20 cm</option>
-    <option value="25">25 cm</option>
-    <option value="30">30 cm</option>
+    <option value="48">Innv. lettvegge 48mm</option>
+    <option value="98" selected>Innv. lettvegge 98mm</option>
+    <option value="148">Innv. bindingsverk 148mm</option>
+    <option value="198">Utv. yttervegg 198mm</option>
+    <option value="248">Utv. yttervegg 248mm</option>
+    <option value="298">Passivhus 298mm</option>
+    <option value="350">Grunnmur 350mm</option>
   </select>
 
   <button id="btnDraw" class="active" onclick="setTool&&setTool('draw');setStatus&&setStatus('Teikn rom')">Teikn rom</button>
@@ -218,7 +220,7 @@ body{display:flex;flex-direction:column;}
   <button id="btnWindow" onclick="placeWindow&&placeWindow()">Vindauge</button>
 
   <div class="vis-wrap">
-    <button id="visBtn" onclick="(function(){var btn=document.getElementById('visBtn');var p=document.getElementById('visPanel');if(p.classList.toggle('open')){var r=btn.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}})()">&#128065; Vis &#9660;</button>
+    <button id="visBtn" onclick="(function(){var btn=document.getElementById('visBtn');var p=document.getElementById('visPanel');var open=p.style.display==='block';p.style.display=open?'none':'block';if(!open){var r=btn.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}})()">&#128065; Vis &#9660;</button>
     <div id="visPanel">
       <label><input type="checkbox" id="chkGrid" checked onchange="if(window.setVisibility)setVisibility('grid',this.checked)"> Rutenett</label>
       <label><input type="checkbox" id="chkOuter" checked onchange="if(window.setVisibility)setVisibility('outer',this.checked)"> Ytre veggar</label>
@@ -296,7 +298,7 @@ document.addEventListener('click', function(e){
   var wrap = document.querySelector('.vis-wrap');
   var panel = document.getElementById('visPanel');
   if(wrap && panel && !wrap.contains(e.target)){
-    panel.classList.remove('open');
+    panel.style.display='none';
   }
 });
 

@@ -148,7 +148,7 @@ function _doExportPDF(opts){
       return [r.name,type.name,(r.w*r.h/TK.scale/TK.scale).toFixed(2)+' m²'];
     });
   }
-  var tableH=tableRows.length?(tableRows.length*6+16):0;
+  var tableH=tableRows.length?(tableRows.length*6.5+8+6.5+8):0;
   var scaleBarH=8;
   var imgAreaW=pw-M*2;
   var imgAreaH=ph-headerH-M-tableH-(tableH?6:0)-scaleBarH-4;
@@ -187,17 +187,45 @@ function _doExportPDF(opts){
 
   // ── 6. Room table ─────────────────────────────────────────────────────────
   if(tableRows.length){
-    var ty=ph-M-tableRows.length*6-12;
-    pdf.setFontSize(8);pdf.setFont(undefined,'bold');pdf.text('Romtabell',M,ty);ty+=5;
-    var colW=[65,40,28];var hdrs=['Romnamn','Type','Areal'];var cx=M;
-    hdrs.forEach(function(h,i){pdf.text(h,cx,ty);cx+=colW[i];});
-    pdf.setLineWidth(0.2);pdf.line(M,ty+1,M+colW[0]+colW[1]+colW[2],ty+1);
-    pdf.setFont(undefined,'normal');
-    tableRows.forEach(function(row){ty+=6;cx=M;row.forEach(function(cell,i){pdf.text(cell,cx,ty);cx+=colW[i];});});
-    // Total area
+    var colW=[65,45,28];var totalTableW=colW[0]+colW[1]+colW[2];
+    var rowH=6.5;var hdrH=8;
+    var ty=ph-M-(tableRows.length*rowH+hdrH+rowH+4);
+    // Section title
+    pdf.setFontSize(8);pdf.setFont(undefined,'bold');pdf.setTextColor(80);
+    pdf.text('ROMTABELL',M,ty);ty+=3;pdf.setTextColor(0);
+    // Header row fill
+    pdf.setFillColor(40,40,40);pdf.rect(M,ty,totalTableW,hdrH,'F');
+    // Header text
+    var hdrs=['Romnamn','Type','Areal'];var cx=M;
+    pdf.setFontSize(8);pdf.setFont(undefined,'bold');pdf.setTextColor(255);
+    hdrs.forEach(function(h,i){pdf.text(h,cx+2,ty+5.5);cx+=colW[i];});
+    pdf.setTextColor(0);
+    // Header border
+    pdf.setDrawColor(40,40,40);pdf.setLineWidth(0.3);pdf.rect(M,ty,totalTableW,hdrH);
+    ty+=hdrH;
+    // Data rows
+    pdf.setFont(undefined,'normal');pdf.setFontSize(7.5);
+    tableRows.forEach(function(row,ri){
+      if(ri%2===0){pdf.setFillColor(247,247,247);pdf.rect(M,ty,totalTableW,rowH,'F');}
+      else{pdf.setFillColor(255,255,255);pdf.rect(M,ty,totalTableW,rowH,'F');}
+      cx=M;row.forEach(function(cell,i){
+        if(i===2){pdf.text(cell,cx+colW[i]-2,ty+4.5,{align:'right'});}
+        else{pdf.text(cell,cx+2,ty+4.5);}
+        cx+=colW[i];
+      });
+      // Row border
+      pdf.setDrawColor(210);pdf.setLineWidth(0.2);pdf.rect(M,ty,totalTableW,rowH);
+      // Column dividers
+      cx=M;colW.slice(0,-1).forEach(function(w){cx+=w;pdf.line(cx,ty,cx,ty+rowH);});
+      ty+=rowH;
+    });
+    // Total row
     var totalArea=TK.rooms.reduce(function(s,r){return s+r.w*r.h/TK.scale/TK.scale;},0);
-    ty+=6;pdf.setFont(undefined,'bold');pdf.text('BRA totalt',M,ty);
-    pdf.setFont(undefined,'normal');pdf.text(totalArea.toFixed(2)+' m²',M+colW[0]+colW[1],ty);
+    pdf.setFillColor(230,230,230);pdf.rect(M,ty,totalTableW,rowH,'F');
+    pdf.setFont(undefined,'bold');pdf.setFontSize(7.5);pdf.setDrawColor(100);pdf.setLineWidth(0.3);pdf.rect(M,ty,totalTableW,rowH);
+    pdf.text('BRA totalt',M+2,ty+4.5);
+    pdf.text(totalArea.toFixed(2)+' m²',M+totalTableW-2,ty+4.5,{align:'right'});
+    pdf.setFont(undefined,'normal');pdf.setDrawColor(0);
   }
 
   pdf.save('tanketekt.pdf');
