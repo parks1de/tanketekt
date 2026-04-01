@@ -23,7 +23,35 @@ window.saveSnapshot=()=>{TK.history.push(JSON.stringify({rooms:TK.rooms,walls:TK
 window.undo=()=>{if(!TK.history.length)return;TK.redoStack.push(JSON.stringify({rooms:TK.rooms,walls:TK.walls,doors:TK.doors,windows:TK.windows}));const s=JSON.parse(TK.history.pop());TK.rooms=s.rooms;TK.walls=s.walls;TK.doors=s.doors;TK.windows=s.windows;updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw()}
 window.redo=()=>{if(!TK.redoStack.length)return;TK.history.push(JSON.stringify({rooms:TK.rooms,walls:TK.walls,doors:TK.doors,windows:TK.windows}));const s=JSON.parse(TK.redoStack.pop());TK.rooms=s.rooms;TK.walls=s.walls;TK.doors=s.doors;TK.windows=s.windows;updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw()}
 window.setStatus=(msg)=>{const e=document.getElementById('statusMsg');if(e)e.textContent=msg}
-window.setTool=(tool)=>{TK.currentTool=tool;['btnDraw','btnWall','btnDoor','btnWindow'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('active')});const active={draw:'btnDraw',wall:'btnWall',door:'btnDoor',window:'btnWindow'}[tool];if(active){const b=document.getElementById(active);if(b)b.classList.add('active');}}
+window.setTool=(tool)=>{
+  TK.currentTool=tool;
+  ['btnDraw','btnWall','btnDoor','btnWindow'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('active')});
+  const active={draw:'btnDraw',wall:'btnWall',door:'btnDoor',window:'btnWindow'}[tool];
+  if(active){const b=document.getElementById(active);if(b)b.classList.add('active');}
+  window._doorGhost=null;
+  const sbar=document.getElementById('elementSizeBar');
+  if(sbar){
+    if(tool==='door'||tool==='window'){
+      sbar.style.display='flex';
+      const btns=document.getElementById('elementSizeBtns');
+      const lbl=document.getElementById('elementSizeLabel');
+      if(lbl)lbl.textContent=tool==='door'?'Dør:':'Vindauge:';
+      if(btns){
+        btns.innerHTML='';
+        const presets=tool==='door'?window.DOOR_PRESETS:window.WINDOW_PRESETS;
+        (presets||[]).forEach(p=>{
+          const b2=document.createElement('button');
+          b2.textContent=p.name;
+          b2.style='padding:2px 8px;font-size:11px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:3px;cursor:pointer;white-space:nowrap;';
+          const isCur=TK.pendingElement&&TK.pendingElement.preset&&TK.pendingElement.preset.id===p.id;
+          if(isCur){b2.style.background='var(--accent)';b2.style.color='#fff';b2.style.borderColor='var(--accent)';}
+          b2.onclick=()=>{if(TK.pendingElement)TK.pendingElement.preset=p;btns.querySelectorAll('button').forEach(x=>{x.style.background='var(--bg)';x.style.color='var(--text)';x.style.borderColor='var(--border)';});b2.style.background='var(--accent)';b2.style.color='#fff';b2.style.borderColor='var(--accent)';};
+          btns.appendChild(b2);
+        });
+      }
+    } else {sbar.style.display='none';}
+  }
+};
 window.updateSidebar=()=>{
   const list=document.getElementById('room-list');if(!list)return;list.innerHTML='';
   TK.rooms.forEach(r=>{const type=TK_ROOM_TYPES.find(t=>t.id===r.type)||TK_ROOM_TYPES[7];const area=roomArea(r);const warn=type.minArea>0&&parseFloat(area)<type.minArea?' ⚠️':'';const li=document.createElement('li');li.className='room-item'+(TK.selectedId===r.id?' selected':'');li.style.borderLeftColor=type.color;li.innerHTML='<div class="rname">'+r.name+warn+'</div><div class="rinfo">'+px2m(r.w)+'m × '+px2m(r.h)+'m | '+area+' m²</div>';
@@ -32,7 +60,9 @@ window.updateSidebar=()=>{
     delBtn.onclick=e=>{e.stopPropagation();if(window.saveSnapshot)saveSnapshot();TK.rooms=TK.rooms.filter(x=>x.id!==r.id);if(TK.selectedId===r.id)TK.selectedId=null;updateSidebar();if(window.redraw)redraw()};
     li.appendChild(delBtn);list.appendChild(li)});
   const wEl=document.getElementById('tek17-warnings');if(!wEl)return;wEl.innerHTML='';
-  TK.rooms.forEach(r=>{const type=TK_ROOM_TYPES.find(t=>t.id===r.type)||TK_ROOM_TYPES[7];if(type.minArea>0&&parseFloat(roomArea(r))<type.minArea){const d=document.createElement('div');d.className='tek17-warn';d.textContent='⚠️ '+r.name+': '+roomArea(r)+'m² (min '+type.minArea+'m² TEK17)';wEl.appendChild(d)}})
+  TK.rooms.forEach(r=>{const type=TK_ROOM_TYPES.find(t=>t.id===r.type)||TK_ROOM_TYPES[7];if(type.minArea>0&&parseFloat(roomArea(r))<type.minArea){const d=document.createElement('div');d.className='tek17-warn';d.textContent='⚠️ '+r.name+': '+roomArea(r)+'m² (min '+type.minArea+'m² TEK17)';wEl.appendChild(d)}});
+  const bra=TK.rooms.reduce((s,r)=>s+r.w*r.h/(TK.scale*TK.scale),0);
+  const braEl=document.getElementById('braTotalt');if(braEl)braEl.textContent=bra>0?'BRA: '+bra.toFixed(1)+' m²':'';
 }
 window.updateWallList=()=>{
   const list=document.getElementById('wall-list');if(!list)return;list.innerHTML='';
@@ -83,37 +113,40 @@ window.promptRoomDims=()=>{
 };
 window.setVisibility=function(key,val){if(key==='grid')TK.showGrid=val;else if(key==='outer')TK.showOuterDims=val;else if(key==='inner')TK.showInnerDims=val;else if(key==='area')TK.showAreaLabels=val;else if(key==='labels')TK.showRoomLabels=val;else if(key==='snap')TK.snapToGrid=val;if(window.redraw)redraw();};
 window.setWallThickness=function(val){TK.wallThickness=val/1000;};
-window.newProject=function(){if(confirm('Nytt prosjekt? Ulagra endringar går tapt.')){TK.rooms=[];TK.walls=[];TK.doors=[];TK.windows=[];TK.selectedId=null;TK.history=[];TK.redoStack=[];localStorage.removeItem('tanketekt_autosave');updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw();setStatus('Nytt prosjekt klart');}};
+window.newProject=function(){if(confirm('Nytt prosjekt? Ulagra endringar går tapt.')){TK.rooms=[];TK.walls=[];TK.doors=[];TK.windows=[];TK.selectedId=null;TK.selectedIds=[];TK.selectedType=null;TK.history=[];TK.redoStack=[];TK.nextId=1;TK.projectName='';var pn=document.getElementById('_projectName');if(pn)pn.value='';localStorage.removeItem('tanketekt_autosave');updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw();setStatus('Nytt prosjekt klart');}};
 window.showHelpModal=function(){
   var ov=document.createElement('div');ov.className='modal-overlay';
-  ov.innerHTML='<div class="modal" style="max-width:480px;width:95%"><h2>Hjelp — TankeTekt</h2>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;font-size:12px;line-height:1.8;margin-top:8px">'+
-    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Teikne</div>'+
-    '<div>&#9633; Dra — teikn rom</div>'+
-    '<div>| Dra — teikn vegg</div>'+
-    '<div>&#8853; — nytt rom med mål</div>'+
-    '<div>D&#248;r/Vindauge — klikk p&#229; vegg</div>'+
+  var S='font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;font-weight:600';
+  ov.innerHTML='<div class="modal" style="max-width:500px;width:95%"><h2>Hjelp — TankeTekt</h2>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;font-size:12px;line-height:1.85;margin-top:10px">'+
+    '<div><div style="'+S+'">Verkt&#248;y (verktyl&#237;ne)</div>'+
+    '<div><svg width="12" height="10" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="1" y="1" width="12" height="10"/></svg> — teikn rom (dra)</div>'+
+    '<div><svg width="8" height="12" viewBox="0 0 10 14" fill="currentColor" style="vertical-align:middle"><rect x="3" y="0" width="4" height="14"/></svg> — teikn vegg (dra)</div>'+
+    '<div><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle"><rect x="1" y="3" width="12" height="10"/><line x1="7" y1="3" x2="7" y2="1"/><line x1="5" y1="1" x2="9" y2="1"/></svg> — nytt rom med mål (D)</div>'+
+    '<div><svg width="11" height="12" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle"><rect x="1" y="1" width="10" height="12"/><line x1="1" y1="1" x2="1" y2="13" stroke-width="2.5"/></svg> — plasser d&#248;r</div>'+
+    '<div><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle"><rect x="1" y="1" width="12" height="12"/><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg> — plasser vindauge</div>'+
+    '<div>&#128065; &#9660; — vis/skjul visingsval</div>'+
     '</div>'+
-    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Redigere</div>'+
+    '<div><div style="'+S+'">Redigere</div>'+
     '<div>Klikk — vel element</div>'+
     '<div>Shift+klikk — fleirval</div>'+
     '<div>Dra — flytt element</div>'+
-    '<div>Hjørnepunkt — endre storleik</div>'+
-    '<div>Dobbelklikk rom — endre detaljar</div>'+
+    '<div>Hjørnepunkt (8 stk) — endre storleik</div>'+
+    '<div>Dobbelklikk rom — namn og type</div>'+
+    '<div>Prosjektnamn-felt — namngjev for eksport</div>'+
     '</div>'+
-    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Snarvegtastar</div>'+
-    '<div><b>Ctrl+Z</b> — angre</div>'+
-    '<div><b>Ctrl+Y</b> — gjer om</div>'+
-    '<div><b>Ctrl+C / Ctrl+V</b> — kopier/lim</div>'+
-    '<div><b>Delete</b> — slett valt</div>'+
+    '<div><div style="'+S+'">Snarvegtastar</div>'+
+    '<div><b>Ctrl+Z / Y</b> — angre / gjer om</div>'+
+    '<div><b>Ctrl+C / V</b> — kopier / lim inn</div>'+
+    '<div><b>Delete</b> — slett valt element</div>'+
     '<div><b>D</b> — nytt rom med mål</div>'+
-    '<div><b>Esc</b> — avbryt handling</div>'+
+    '<div><b>Esc</b> — avbryt (d&#248;r/vegg/teikn)</div>'+
     '</div>'+
-    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Navigasjon</div>'+
+    '<div><div style="'+S+'">Navigasjon</div>'+
     '<div>Scroll — zoom inn/ut</div>'+
-    '<div>Alt+dra — panorere</div>'+
-    '<div>&#8694; — tilpass til innhald</div>'+
-    '<div>Prosjektnamn-felt — namngjev teikning for eksport</div>'+
+    '<div>Alt + dra — panorere</div>'+
+    '<div><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="vertical-align:middle"><polyline points="1,5 1,1 5,1"/><polyline points="9,1 13,1 13,5"/><polyline points="13,9 13,13 9,13"/><polyline points="5,13 1,13 1,9"/></svg> — tilpass zoom til innhald</div>'+
+    '<div>&#8634; / &#8635; — angre / gjer om</div>'+
     '</div>'+
     '</div>'+
     '<div class="modal-btns"><button onclick="this.closest(\'.modal-overlay\').remove()">Lukk</button></div></div>';

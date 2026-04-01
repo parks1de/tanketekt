@@ -160,13 +160,21 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(r){
           const snapped=e.shiftKey?{x:TK._moveEl.origX+dx,y:TK._moveEl.origY+dy}:window.snapPoint?window.snapPoint(e.offsetX-(TK._moveEl.origX+r.w/2-TK.panX)*TK.zoom/TK.zoom,e.offsetY-(TK._moveEl.origY+r.h/2-TK.panY)*TK.zoom/TK.zoom,false):{x:TK._moveEl.origX+dx,y:TK._moveEl.origY+dy};
           if(!e.shiftKey&&window.snapPoint){
-          // snap top-left corner
-          const snapped=window.snapPoint(
-            e.offsetX - (TK._moveEl.startSX - window.worldToScreen(TK._moveEl.origX,TK._moveEl.origY).x),
-            e.offsetY - (TK._moveEl.startSY - window.worldToScreen(TK._moveEl.origX,TK._moveEl.origY).y),
-            false
-          );
-          r.x=snapped.x; r.y=snapped.y;
+          // Try snapping all 4 corners of the moving room; pick best
+          const origTL=window.worldToScreen(TK._moveEl.origX,TK._moveEl.origY);
+          const dpx=e.offsetX-TK._moveEl.startSX,dpy=e.offsetY-TK._moveEl.startSY;
+          const savedX=r.x,savedY=r.y;r.x=-99999;r.y=-99999; // exclude self from snap targets
+          let bestSnap=null,bestDist=Infinity;
+          [[0,0],[r.w,0],[0,r.h],[r.w,r.h]].forEach(([cdx,cdy])=>{
+            const sx=origTL.x+dpx+cdx*TK.zoom,sy=origTL.y+dpy+cdy*TK.zoom;
+            const raw=window.screenToWorld(sx,sy);
+            const sn=window.snapPoint(sx,sy,false);
+            const d=Math.hypot(sn.x-raw.x,sn.y-raw.y);
+            if(d>0.5&&d<bestDist){bestDist=d;bestSnap={x:sn.x-cdx,y:sn.y-cdy};}
+          });
+          r.x=savedX;r.y=savedY;
+          if(bestSnap){r.x=bestSnap.x;r.y=bestSnap.y;}
+          else{r.x=TK._moveEl.origX+dpx/TK.zoom;r.y=TK._moveEl.origY+dpy/TK.zoom;}
         } else { r.x=TK._moveEl.origX+dx; r.y=TK._moveEl.origY+dy; }
         }
         if(r&&TK._moveEl.origPositions){const moveDX=r.x-TK._moveEl.origX,moveDY=r.y-TK._moveEl.origY;Object.entries(TK._moveEl.origPositions).forEach(([id,pos])=>{if(parseInt(id)===TK._moveEl.id)return;const r2=TK.rooms.find(x=>x.id===parseInt(id));if(r2){r2.x=pos.x+moveDX;r2.y=pos.y+moveDY;}});}
@@ -192,6 +200,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(TK._wallEnd){const s=snap(e.offsetX,e.offsetY,e.shiftKey);const wl=TK.walls.find(x=>x.id===TK._wallEnd.wallId);if(wl){if(TK._wallEnd.end==='start'){wl.x1=s.x;wl.y1=s.y;}else{wl.x2=s.x;wl.y2=s.y;}}window.redraw();return;}
     if(TK._draw?.active){const s=snap(e.offsetX,e.offsetY,e.shiftKey);window.activePreview={type:'room',x:Math.min(TK._draw.start.x,s.x),y:Math.min(TK._draw.start.y,s.y),w:Math.abs(s.x-TK._draw.start.x),h:Math.abs(s.y-TK._draw.start.y)};window.redraw();return;}
     if(TK._wall?.active){const s=snap(e.offsetX,e.offsetY,e.shiftKey);window.activePreview={type:'wall',x1:TK._wall.start.x,y1:TK._wall.start.y,x2:s.x,y2:s.y,thickness:TK.wallThickness};window.redraw();return;}
+    // Ghost preview for door/window placement
+    if(TK.currentTool==='door'||TK.currentTool==='window'){
+      window._doorGhost=window.hitTestAll?window.hitTestAll(e.offsetX,e.offsetY):null;
+      window.redraw();
+    } else {window._doorGhost=null;}
     window.snapIndicator=null;
     {const cvEl=document.getElementById('floorplan');
     let cur='crosshair';

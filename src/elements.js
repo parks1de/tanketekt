@@ -1,6 +1,24 @@
 
-window.DOOR_PRESETS=[{id:'d70',name:'Dør 70cm',width:0.7},{id:'d80',name:'Dør 80cm',width:0.8},{id:'d90',name:'Dør 90cm',width:0.9},{id:'d120',name:'Dør 120cm',width:1.2}];
-window.WINDOW_PRESETS=[{id:'v60',name:'Vindauge 60cm',width:0.6},{id:'v90',name:'Vindauge 90cm',width:0.9},{id:'v120',name:'Vindauge 120cm',width:1.2},{id:'v150',name:'Vindauge 150cm',width:1.5}];
+window.DOOR_PRESETS=[
+  {id:'d60',name:'60cm',width:0.6},
+  {id:'d70',name:'70cm',width:0.7},
+  {id:'d80',name:'80cm',width:0.8},
+  {id:'d90',name:'90cm',width:0.9},
+  {id:'d100',name:'100cm',width:1.0},
+  {id:'d120',name:'120cm',width:1.2},
+  {id:'d140',name:'140cm',width:1.4},
+  {id:'d160',name:'160cm (dobbel)',width:1.6}
+];
+window.WINDOW_PRESETS=[
+  {id:'v60',name:'60cm',width:0.6},
+  {id:'v90',name:'90cm',width:0.9},
+  {id:'v120',name:'120cm',width:1.2},
+  {id:'v150',name:'150cm',width:1.5},
+  {id:'v180',name:'180cm',width:1.8},
+  {id:'v200',name:'200cm',width:2.0},
+  {id:'v240',name:'240cm',width:2.4},
+  {id:'v300',name:'300cm',width:3.0}
+];
 
 function getElPos(el){
   if(el.wallId){var w=TK.walls.find(function(x){return x.id===el.wallId;});if(!w)return null;return{x1:w.x1,y1:w.y1,x2:w.x2,y2:w.y2,thickness:w.thickness};}

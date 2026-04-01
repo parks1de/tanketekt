@@ -59,16 +59,22 @@ window.exportPNG=function(){
 
 window.exportPDF=function(){
   var ov=document.createElement('div');ov.className='modal-overlay';
-  ov.innerHTML='<div class="modal"><h2>Eksporter PDF</h2>'+
-    '<label><input type="checkbox" id="_pdfGrid" '+(TK.showGrid?'checked':'')+'>Vis rutenett</label>'+
-    '<label><input type="checkbox" id="_pdfOuter" '+(TK.showOuterDims?'checked':'')+'>Ytre mål</label>'+
-    '<label><input type="checkbox" id="_pdfInner" '+(TK.showInnerDims?'checked':'')+'>Indre mål</label>'+
-    '<label><input type="checkbox" id="_pdfLabels" '+(TK.showRoomLabels?'checked':'')+'>Romnamn</label>'+
-    '<label><input type="checkbox" id="_pdfArea" '+(TK.showAreaLabels?'checked':'')+'>Areal</label>'+
-    '<label><input type="checkbox" id="_pdfTable" checked>Romtabell</label>'+
+  var chk='style="accent-color:var(--accent)"';
+  var lS='style="display:flex;align-items:center;gap:7px;font-size:12px;padding:3px 0;cursor:pointer"';
+  ov.innerHTML='<div class="modal" style="min-width:320px"><h2>Eksporter PDF</h2>'+
+    '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:10px 0 6px">Innstillingar</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">'+
+    '<label '+lS+'><input type="checkbox" id="_pdfGrid" '+(TK.showGrid?'checked':'')+' '+chk+'> Rutenett</label>'+
+    '<label '+lS+'><input type="checkbox" id="_pdfOuter" '+(TK.showOuterDims?'checked':'')+' '+chk+'> Ytre mål</label>'+
+    '<label '+lS+'><input type="checkbox" id="_pdfInner" '+(TK.showInnerDims?'checked':'')+' '+chk+'> Indre mål</label>'+
+    '<label '+lS+'><input type="checkbox" id="_pdfLabels" '+(TK.showRoomLabels?'checked':'')+' '+chk+'> Romnamn</label>'+
+    '<label '+lS+'><input type="checkbox" id="_pdfArea" '+(TK.showAreaLabels?'checked':'')+' '+chk+'> Areal</label>'+
+    '<label '+lS+'><input type="checkbox" id="_pdfTable" checked '+chk+'> Romtabell</label>'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px">Prosjektnamn: <b style="color:var(--text)">'+(TK.projectName||'(ikkje sett)')+' </b></div>'+
     '<div class="modal-btns">'+
     '<button id="_pdfCancel">Avbryt</button>'+
-    '<button id="_pdfTableOnly">Berre tabell</button>'+
+    '<button id="_pdfTableOnly" style="background:var(--bg)">Berre tabell</button>'+
     '<button id="_pdfOk" style="background:var(--accent);border-color:var(--accent);color:#fff">Eksporter PDF</button>'+
     '</div></div>';
   document.body.appendChild(ov);
