@@ -23,10 +23,11 @@ window.loadFromLocalStorage=function(){
 };
 
 window.saveProject=function(){
-  var data=JSON.stringify({version:2,rooms:TK.rooms,walls:TK.walls,doors:TK.doors,windows:TK.windows,scale:TK.scale},null,2);
+  var fname=(TK.projectName?TK.projectName.replace(/[^a-zA-Z0-9æøåÆØÅ_-]/g,'_'):'tanketekt')+'.json';
+  var data=JSON.stringify({version:2,projectName:TK.projectName||'',rooms:TK.rooms,walls:TK.walls,doors:TK.doors,windows:TK.windows,scale:TK.scale},null,2);
   var blob=new Blob([data],{type:'application/json'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.download='tanketekt.json';a.href=url;a.click();
+  var a=document.createElement('a');a.download=fname;a.href=url;a.click();
   setTimeout(function(){URL.revokeObjectURL(url);},1000);
   if(window.showToast)showToast('Prosjekt lagra!','success');
 };
@@ -40,6 +41,7 @@ window.loadProject=function(file){
       if(window.saveSnapshot)saveSnapshot();
       TK.rooms=s.rooms||[];TK.walls=s.walls||[];TK.doors=s.doors||[];TK.windows=s.windows||[];
       if(s.scale)TK.scale=s.scale;
+      if(s.projectName!==undefined){TK.projectName=s.projectName;var _pn=document.getElementById('_projectName');if(_pn)_pn.value=TK.projectName;}
       if(window.updateSidebar)updateSidebar();if(window.updateWallList)updateWallList();if(window.updateElementList)updateElementList();
       if(window.zoomToFit)zoomToFit();else if(window.redraw)redraw();
       if(window.showToast)showToast('Prosjekt opna!','success');
@@ -50,7 +52,8 @@ window.loadProject=function(file){
 
 window.exportPNG=function(){
   var cv=document.getElementById('floorplan');
-  var a=document.createElement('a');a.download='tanketekt.png';a.href=cv.toDataURL('image/png');a.click();
+  var fname=(TK.projectName?TK.projectName.replace(/[^a-zA-Z0-9æøåÆØÅ_-]/g,'_'):'tanketekt')+'.png';
+  var a=document.createElement('a');a.download=fname;a.href=cv.toDataURL('image/png');a.click();
   if(window.showToast)showToast('PNG lasta ned!','success');
 };
 
@@ -63,13 +66,14 @@ window.exportPDF=function(){
     '<label><input type="checkbox" id="_pdfLabels" '+(TK.showRoomLabels?'checked':'')+'>Romnamn</label>'+
     '<label><input type="checkbox" id="_pdfArea" '+(TK.showAreaLabels?'checked':'')+'>Areal</label>'+
     '<label><input type="checkbox" id="_pdfTable" checked>Romtabell</label>'+
-    '<label>Teikna av</label><input id="_pdfDrawer" type="text" placeholder="Namn...">'+
     '<div class="modal-btns">'+
     '<button id="_pdfCancel">Avbryt</button>'+
+    '<button id="_pdfTableOnly">Berre tabell</button>'+
     '<button id="_pdfOk" style="background:var(--accent);border-color:var(--accent);color:#fff">Eksporter PDF</button>'+
     '</div></div>';
   document.body.appendChild(ov);
   document.getElementById('_pdfCancel').onclick=function(){ov.remove();};
+  document.getElementById('_pdfTableOnly').onclick=function(){ov.remove();_doExportTableOnly();};
   document.getElementById('_pdfOk').onclick=function(){
     var opts={
       grid:document.getElementById('_pdfGrid').checked,
@@ -77,8 +81,7 @@ window.exportPDF=function(){
       inner:document.getElementById('_pdfInner').checked,
       labels:document.getElementById('_pdfLabels').checked,
       area:document.getElementById('_pdfArea').checked,
-      table:document.getElementById('_pdfTable').checked,
-      drawer:document.getElementById('_pdfDrawer').value.trim()
+      table:document.getElementById('_pdfTable').checked
     };
     ov.remove();
     _doExportPDF(opts);
@@ -131,10 +134,9 @@ function _doExportPDF(opts){
 
   // Header
   pdf.setFontSize(12);pdf.setFont(undefined,'bold');
-  pdf.text('Planteikning',M,M+6);
+  pdf.text(TK.projectName||'Planteikning',M,M+6);
   pdf.setFontSize(8);pdf.setFont(undefined,'normal');pdf.setTextColor(100);
   var meta='Dato: '+new Date().toLocaleDateString('no-NO');
-  if(opts.drawer)meta+='     Teikna av: '+opts.drawer;
   pdf.text(meta,M,M+12);pdf.setTextColor(0);
   pdf.setLineWidth(0.3);pdf.line(M,M+15,pw-M,M+15);
   var headerH=M+19;
@@ -228,6 +230,55 @@ function _doExportPDF(opts){
     pdf.setFont(undefined,'normal');pdf.setDrawColor(0);
   }
 
-  pdf.save('tanketekt.pdf');
+  var pdfName=(TK.projectName?TK.projectName.replace(/[^a-zA-Z0-9æøåÆØÅ_-]/g,'_'):'tanketekt')+'.pdf';
+  pdf.save(pdfName);
   if(window.showToast)showToast('PDF lasta ned!','success');
+}
+
+function _doExportTableOnly(){
+  var jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+  if(!jsPDFCtor){if(window.showToast)showToast('jsPDF ikkje tilgjengeleg','error');return;}
+  if(!TK.rooms.length){if(window.showToast)showToast('Ingen rom å eksportere','error');return;}
+  var pdf=new jsPDFCtor({orientation:'portrait',unit:'mm',format:'a4'});
+  var pw=pdf.internal.pageSize.getWidth(),M=15;
+  pdf.setFontSize(13);pdf.setFont(undefined,'bold');
+  pdf.text(TK.projectName||'Romtabell',M,M+6);
+  pdf.setFontSize(8);pdf.setFont(undefined,'normal');pdf.setTextColor(100);
+  pdf.text('Dato: '+new Date().toLocaleDateString('no-NO'),M,M+12);
+  pdf.setTextColor(0);pdf.setLineWidth(0.3);pdf.line(M,M+15,pw-M,M+15);
+  var ty=M+22;
+  var tableRows=TK.rooms.map(function(r){
+    var type=(window.TK_ROOM_TYPES||[]).find(function(t){return t.id===r.type;})||{name:'Anna'};
+    return [r.name,type.name,(r.w*r.h/TK.scale/TK.scale).toFixed(2)+' m²'];
+  });
+  var colW=[80,55,30];var totalTableW=colW[0]+colW[1]+colW[2];
+  var rowH=6.5,hdrH=8;
+  pdf.setFillColor(40,40,40);pdf.rect(M,ty,totalTableW,hdrH,'F');
+  var hdrs=['Romnamn','Type','Areal'];var cx=M;
+  pdf.setFontSize(8);pdf.setFont(undefined,'bold');pdf.setTextColor(255);
+  hdrs.forEach(function(h,i){pdf.text(h,cx+2,ty+5.5);cx+=colW[i];});
+  pdf.setTextColor(0);pdf.setDrawColor(40,40,40);pdf.setLineWidth(0.3);pdf.rect(M,ty,totalTableW,hdrH);
+  ty+=hdrH;
+  pdf.setFont(undefined,'normal');pdf.setFontSize(7.5);
+  tableRows.forEach(function(row,ri){
+    pdf.setFillColor(ri%2===0?247:255,ri%2===0?247:255,ri%2===0?247:255);
+    pdf.rect(M,ty,totalTableW,rowH,'F');
+    cx=M;row.forEach(function(cell,i){
+      if(i===2)pdf.text(cell,cx+colW[i]-2,ty+4.5,{align:'right'});
+      else pdf.text(cell,cx+2,ty+4.5);
+      cx+=colW[i];
+    });
+    pdf.setDrawColor(210);pdf.setLineWidth(0.2);pdf.rect(M,ty,totalTableW,rowH);
+    cx=M;colW.slice(0,-1).forEach(function(w){cx+=w;pdf.line(cx,ty,cx,ty+rowH);});
+    ty+=rowH;
+  });
+  var totalArea=TK.rooms.reduce(function(s,r){return s+r.w*r.h/TK.scale/TK.scale;},0);
+  pdf.setFillColor(220,220,220);pdf.rect(M,ty,totalTableW,rowH,'F');
+  pdf.setFont(undefined,'bold');pdf.setDrawColor(100);pdf.setLineWidth(0.3);pdf.rect(M,ty,totalTableW,rowH);
+  pdf.text('BRA totalt',M+2,ty+4.5);
+  pdf.text(totalArea.toFixed(2)+' m²',M+totalTableW-2,ty+4.5,{align:'right'});
+  pdf.setFont(undefined,'normal');pdf.setDrawColor(0);
+  var fname=(TK.projectName?TK.projectName.replace(/[^a-zA-Z0-9æøåÆØÅ_-]/g,'_'):'romtabell')+'-tabell.pdf';
+  pdf.save(fname);
+  if(window.showToast)showToast('Tabell eksportert!','success');
 }

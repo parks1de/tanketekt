@@ -213,37 +213,39 @@ body{display:flex;flex-direction:column;}
     <option value="350">Grunnmur 350mm</option>
   </select>
 
-  <button id="btnDraw" class="active" onclick="setTool&&setTool('draw');setStatus&&setStatus('Teikn rom')">Teikn rom</button>
-  <button id="btnWall" onclick="setTool&&setTool('wall');setStatus&&setStatus('Teikn vegg')">Teikn vegg</button>
-  <button onclick="promptRoomDims&&promptRoomDims()">&#10011; Rom</button>
-  <button id="btnDoor" onclick="placeDoor&&placeDoor()">D&oslash;r</button>
-  <button id="btnWindow" onclick="placeWindow&&placeWindow()">Vindauge</button>
+  <button id="btnDraw" class="active" title="Teikn rom" onclick="setTool&&setTool('draw');setStatus&&setStatus('Teikn rom: klikk og dra')"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="1" width="12" height="10"/></svg></button>
+  <button id="btnWall" title="Teikn vegg" onclick="setTool&&setTool('wall');setStatus&&setStatus('Teikn vegg: klikk og dra')"><svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><rect x="3" y="0" width="4" height="14"/></svg></button>
+  <button title="Nytt rom med mål (D)" onclick="promptRoomDims&&promptRoomDims()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="3" width="12" height="10"/><line x1="7" y1="3" x2="7" y2="1"/><line x1="5" y1="1" x2="9" y2="1"/></svg></button>
+  <button id="btnDoor" title="Plasser d&oslash;r" onclick="placeDoor&&placeDoor()"><svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="10" height="12"/><line x1="1" y1="1" x2="1" y2="13" stroke-width="2.5"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg></button>
+  <button id="btnWindow" title="Plasser vindauge" onclick="placeWindow&&placeWindow()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="12"/><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg></button>
 
   <div class="vis-wrap">
-    <button id="visBtn" onclick="(function(){var btn=document.getElementById('visBtn');var p=document.getElementById('visPanel');var open=p.style.display==='block';p.style.display=open?'none':'block';if(!open){var r=btn.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}})()">&#128065; Vis &#9660;</button>
+    <button id="visBtn" title="Visnadsinnstillingar" onclick="(function(){var btn=document.getElementById('visBtn');var p=document.getElementById('visPanel');var open=p.style.display==='block';p.style.display=open?'none':'block';if(!open){var r=btn.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}})()">&#128065; &#9660;</button>
     <div id="visPanel">
       <label><input type="checkbox" id="chkGrid" checked onchange="if(window.setVisibility)setVisibility('grid',this.checked)"> Rutenett</label>
-      <label><input type="checkbox" id="chkOuter" checked onchange="if(window.setVisibility)setVisibility('outer',this.checked)"> Ytre veggar</label>
-      <label><input type="checkbox" id="chkInner" checked onchange="if(window.setVisibility)setVisibility('inner',this.checked)"> Indre veggar</label>
+      <label><input type="checkbox" id="chkOuter" checked onchange="if(window.setVisibility)setVisibility('outer',this.checked)"> Ytre mål</label>
+      <label><input type="checkbox" id="chkInner" onchange="if(window.setVisibility)setVisibility('inner',this.checked)"> Indre mål</label>
       <label><input type="checkbox" id="chkArea" checked onchange="if(window.setVisibility)setVisibility('area',this.checked)"> Areal</label>
       <label><input type="checkbox" id="chkLabels" checked onchange="if(window.setVisibility)setVisibility('labels',this.checked)"> Etiketter</label>
       <label><input type="checkbox" id="chkSnap" onchange="if(window.setVisibility)setVisibility('snap',this.checked)"> Rutenett-snap</label>
     </div>
   </div>
 
-  <button onclick="if(window.undo)undo()">Angre</button>
-  <button onclick="if(window.redo)redo()">Gjer om</button>
+  <button title="Angre (Ctrl+Z)" onclick="if(window.undo)undo()">&#8634;</button>
+  <button title="Gjer om (Ctrl+Y)" onclick="if(window.redo)redo()">&#8635;</button>
 
   <div class="spacer"></div>
 
-  <button onclick="if(window.zoomToFit)zoomToFit()">Tilpass</button>
-  <button onclick="if(window.newProject)newProject()">Ny</button>
-  <button onclick="if(window.saveProject)saveProject()">Lagre</button>
+  <input id="_projectName" type="text" placeholder="Prosjektnamn..." title="Prosjektnamn — brukt i eksport og lagring" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px;width:160px;outline:none;flex-shrink:0;" oninput="TK.projectName=this.value" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+
+  <button title="Tilpass — zoom til innhald" onclick="if(window.zoomToFit)zoomToFit()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="1,5 1,1 5,1"/><polyline points="9,1 13,1 13,5"/><polyline points="13,9 13,13 9,13"/><polyline points="5,13 1,13 1,9"/></svg></button>
+  <button title="Nytt prosjekt" onclick="if(window.newProject)newProject()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="3" width="12" height="10"/><polyline points="4,3 4,1 9,1"/><line x1="7" y1="7" x2="7" y2="11"/><line x1="5" y1="9" x2="9" y2="9"/></svg></button>
+  <button title="Lagre prosjekt" onclick="if(window.saveProject)saveProject()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="12"/><rect x="3.5" y="1" width="5" height="3.5" fill="currentColor" stroke="none"/><rect x="3" y="8" width="8" height="4"/></svg></button>
   <input id="fileInput" type="file" accept=".json" style="display:none" onchange="if(window.loadProject)loadProject(this.files[0])">
-  <button onclick="document.getElementById('fileInput').click()">&#128194; &Aring;pne</button>
-  <button class="bexp" onclick="if(window.exportPNG)exportPNG()">PNG</button>
-  <button class="bexp" onclick="if(window.exportPDF)exportPDF()">PDF</button>
-  <button onclick="if(window.showHelpModal)showHelpModal()" title="Hjelp">?</button>
+  <button title="Opne prosjekt" onclick="document.getElementById('fileInput').click()">&#128194;</button>
+  <button class="bexp" title="Eksporter PNG" onclick="if(window.exportPNG)exportPNG()">PNG</button>
+  <button class="bexp" title="Eksporter PDF" onclick="if(window.exportPDF)exportPDF()">PDF</button>
+  <button title="Hjelp" onclick="if(window.showHelpModal)showHelpModal()">?</button>
 
 </div>
 

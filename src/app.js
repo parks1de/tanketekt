@@ -15,8 +15,8 @@ window.cascadeDelete=(id,type)=>{
   if(window.updateElementList)updateElementList();
   if(window.redraw)redraw();
 };
-window.TK={ghostObject:null,rooms:[],walls:[],doors:[],windows:[],history:[],redoStack:[],scale:100,zoom:1.0,panX:0,panY:0,showGrid:true,showOuterDims:true,showInnerDims:false,showAreaLabels:true,showRoomLabels:true,selectedId:null,selectedType:null,selectedIds:[],currentTool:'draw',wallThickness:0.098,nextId:1,clipboard:null,snapToGrid:false}
-window.TK_ROOM_TYPES=[{id:'stove',name:'Stove',color:'#4a90d9',minArea:15},{id:'soverom',name:'Soverom',color:'#7b68ee',minArea:7},{id:'kjokken',name:'Kjøken',color:'#e8a838',minArea:6},{id:'bad',name:'Bad/WC',color:'#4ecdc4',minArea:2.5},{id:'gang',name:'Gang/Entre',color:'#95a5a6',minArea:0},{id:'bod',name:'Bod',color:'#a0826d',minArea:0},{id:'kontor',name:'Kontor',color:'#5dade2',minArea:0},{id:'anna',name:'Anna',color:'#aaaaaa',minArea:0}]
+window.TK={ghostObject:null,rooms:[],walls:[],doors:[],windows:[],history:[],redoStack:[],scale:100,zoom:1.0,panX:0,panY:0,showGrid:true,showOuterDims:true,showInnerDims:false,showAreaLabels:true,showRoomLabels:true,selectedId:null,selectedType:null,selectedIds:[],currentTool:'draw',wallThickness:0.098,nextId:1,clipboard:null,snapToGrid:false,projectName:''}
+window.TK_ROOM_TYPES=[{id:'stove',name:'Stove',color:'#4a7fa6',minArea:15},{id:'soverom',name:'Soverom',color:'#7d6a9e',minArea:7},{id:'kjokken',name:'Kjøken',color:'#c8874a',minArea:6},{id:'bad',name:'Bad/WC',color:'#4a9690',minArea:2.5},{id:'gang',name:'Gang/Entre',color:'#7e8e94',minArea:0},{id:'bod',name:'Bod',color:'#8a7060',minArea:0},{id:'kontor',name:'Kontor',color:'#5e9070',minArea:0},{id:'anna',name:'Anna',color:'#909090',minArea:0}]
 window.px2m=(px)=>(px/TK.scale).toFixed(2)
 window.roomArea=(r)=>(r.w*r.h/(TK.scale*TK.scale)).toFixed(2)
 window.saveSnapshot=()=>{TK.history.push(JSON.stringify({rooms:TK.rooms,walls:TK.walls,doors:TK.doors,windows:TK.windows}));if(TK.history.length>50)TK.history.shift();TK.redoStack=[];autoSave()}
@@ -84,7 +84,41 @@ window.promptRoomDims=()=>{
 window.setVisibility=function(key,val){if(key==='grid')TK.showGrid=val;else if(key==='outer')TK.showOuterDims=val;else if(key==='inner')TK.showInnerDims=val;else if(key==='area')TK.showAreaLabels=val;else if(key==='labels')TK.showRoomLabels=val;else if(key==='snap')TK.snapToGrid=val;if(window.redraw)redraw();};
 window.setWallThickness=function(val){TK.wallThickness=val/1000;};
 window.newProject=function(){if(confirm('Nytt prosjekt? Ulagra endringar går tapt.')){TK.rooms=[];TK.walls=[];TK.doors=[];TK.windows=[];TK.selectedId=null;TK.history=[];TK.redoStack=[];localStorage.removeItem('tanketekt_autosave');updateSidebar();updateWallList();if(window.updateElementList)updateElementList();if(window.redraw)redraw();setStatus('Nytt prosjekt klart');}};
-window.showHelpModal=function(){var ov=document.createElement('div');ov.className='modal-overlay';ov.innerHTML='<div class="modal"><h2>Hjelp — TankeTekt</h2><p><b>Teikn rom:</b> klikk og dra på brettet</p><p><b>Teikn vegg:</b> vel "Teikn vegg", klikk og dra</p><p><b>Dør/Vindauge:</b> klikk knapp, klikk på vegg</p><p><b>Flytt:</b> vel element, dra i kroppen</p><p><b>Endre storleik rom:</b> vel rom, dra i hjørnehandtaka</p><p><b>Endre namn/type:</b> dobbelklikk på rom</p><p><b>Slett:</b> vel element, trykk Delete</p><p><b>Angre/Gjer om:</b> Ctrl+Z / Ctrl+Y</p><p><b>Zoom:</b> scroll-hjul | <b>Pan:</b> Alt+dra</p><div class="modal-btns"><button onclick="this.closest(\'.modal-overlay\').remove()">Lukk</button></div></div>';document.body.appendChild(ov);};
+window.showHelpModal=function(){
+  var ov=document.createElement('div');ov.className='modal-overlay';
+  ov.innerHTML='<div class="modal" style="max-width:480px;width:95%"><h2>Hjelp — TankeTekt</h2>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;font-size:12px;line-height:1.8;margin-top:8px">'+
+    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Teikne</div>'+
+    '<div>&#9633; Dra — teikn rom</div>'+
+    '<div>| Dra — teikn vegg</div>'+
+    '<div>&#8853; — nytt rom med mål</div>'+
+    '<div>D&#248;r/Vindauge — klikk p&#229; vegg</div>'+
+    '</div>'+
+    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Redigere</div>'+
+    '<div>Klikk — vel element</div>'+
+    '<div>Shift+klikk — fleirval</div>'+
+    '<div>Dra — flytt element</div>'+
+    '<div>Hjørnepunkt — endre storleik</div>'+
+    '<div>Dobbelklikk rom — endre detaljar</div>'+
+    '</div>'+
+    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Snarvegtastar</div>'+
+    '<div><b>Ctrl+Z</b> — angre</div>'+
+    '<div><b>Ctrl+Y</b> — gjer om</div>'+
+    '<div><b>Ctrl+C / Ctrl+V</b> — kopier/lim</div>'+
+    '<div><b>Delete</b> — slett valt</div>'+
+    '<div><b>D</b> — nytt rom med mål</div>'+
+    '<div><b>Esc</b> — avbryt handling</div>'+
+    '</div>'+
+    '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Navigasjon</div>'+
+    '<div>Scroll — zoom inn/ut</div>'+
+    '<div>Alt+dra — panorere</div>'+
+    '<div>&#8694; — tilpass til innhald</div>'+
+    '<div>Prosjektnamn-felt — namngjev teikning for eksport</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="modal-btns"><button onclick="this.closest(\'.modal-overlay\').remove()">Lukk</button></div></div>';
+  document.body.appendChild(ov);
+};
 window.promptWallDims=()=>{
   const ov=document.createElement('div');ov.className='modal-overlay';
   ov.innerHTML='<div class="modal"><h2>Ny vegg med mål</h2><label>Lengd (m)</label><input id="_wl2" type="number" value="3.0" step="0.05" min="0.1"><label>Tykkleik</label><select id="_wth2"><option value="0.098">Innv. 98mm</option><option value="0.148">Innv. 148mm</option><option value="0.198" selected>Utv. 198mm</option><option value="0.248">Utv. 248mm</option></select><div class="modal-btns"><button id="_wpc2">Avbryt</button><button id="_wpp2" style="background:var(--accent);border-color:var(--accent)">Plasser</button></div></div>';
@@ -114,7 +148,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(e.ctrlKey&&e.key==='v')pasteClipboard();
     else if(e.key==='Delete')deleteSelected();
     else if(e.key==='d'||e.key==='D'){if(window.promptRoomDims)promptRoomDims();}
-    else if(e.key==='Escape'){TK.currentTool='draw';setTool('draw');window.activePreview=null;window.snapIndicator=null;if(window.redraw)redraw();}
+    else if(e.key==='Escape'){TK.currentTool='draw';TK.pendingElement=null;setTool('draw');window.activePreview=null;window.snapIndicator=null;if(window.setStatus)setStatus('Klar');if(window.redraw)redraw();}
   });
   setTool('draw');setStatus('Teikn rom: klikk og dra');
   setTimeout(loadFromLocalStorage,500);
