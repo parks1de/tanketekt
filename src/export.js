@@ -59,17 +59,17 @@ window.exportPNG=function(){
 
 window.exportPDF=function(){
   var ov=document.createElement('div');ov.className='modal-overlay';
-  var chk='style="accent-color:var(--accent)"';
-  var lS='style="display:flex;align-items:center;gap:7px;font-size:12px;padding:3px 0;cursor:pointer"';
-  ov.innerHTML='<div class="modal" style="min-width:320px"><h2>Eksporter PDF</h2>'+
-    '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:10px 0 6px">Innstillingar</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">'+
-    '<label '+lS+'><input type="checkbox" id="_pdfGrid" '+(TK.showGrid?'checked':'')+' '+chk+'> Rutenett</label>'+
-    '<label '+lS+'><input type="checkbox" id="_pdfOuter" '+(TK.showOuterDims?'checked':'')+' '+chk+'> Ytre mål</label>'+
-    '<label '+lS+'><input type="checkbox" id="_pdfInner" '+(TK.showInnerDims?'checked':'')+' '+chk+'> Indre mål</label>'+
-    '<label '+lS+'><input type="checkbox" id="_pdfLabels" '+(TK.showRoomLabels?'checked':'')+' '+chk+'> Romnamn</label>'+
-    '<label '+lS+'><input type="checkbox" id="_pdfArea" '+(TK.showAreaLabels?'checked':'')+' '+chk+'> Areal</label>'+
-    '<label '+lS+'><input type="checkbox" id="_pdfTable" checked '+chk+'> Romtabell</label>'+
+  var chk='style="accent-color:var(--accent);cursor:pointer"';
+  var tS='style="font-size:12px;color:var(--text)"';
+  ov.innerHTML='<div class="modal" style="min-width:300px"><h2>Eksporter PDF</h2>'+
+    '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:10px 0 8px">Innstillingar</div>'+
+    '<div style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:5px 10px;align-items:center">'+
+    '<input type="checkbox" id="_pdfGrid" '+(TK.showGrid?'checked':'')+' '+chk+'><span '+tS+'>Rutenett</span>'+
+    '<input type="checkbox" id="_pdfOuter" '+(TK.showOuterDims?'checked':'')+' '+chk+'><span '+tS+'>Ytre mål</span>'+
+    '<input type="checkbox" id="_pdfInner" '+(TK.showInnerDims?'checked':'')+' '+chk+'><span '+tS+'>Indre mål</span>'+
+    '<input type="checkbox" id="_pdfLabels" '+(TK.showRoomLabels?'checked':'')+' '+chk+'><span '+tS+'>Romnamn</span>'+
+    '<input type="checkbox" id="_pdfArea" '+(TK.showAreaLabels?'checked':'')+' '+chk+'><span '+tS+'>Areal</span>'+
+    '<input type="checkbox" id="_pdfTable" checked '+chk+'><span '+tS+'>Romtabell</span>'+
     '</div>'+
     '<div style="font-size:11px;color:var(--muted);margin-top:8px">Prosjektnamn: <b style="color:var(--text)">'+(TK.projectName||'(ikkje sett)')+' </b></div>'+
     '<div class="modal-btns">'+
@@ -151,8 +151,6 @@ function _doExportPDF(opts){
   function px(wx){return ox+(wx-minX)*sf;}
   function py(wy){return oy+(wy-minY)*sf;}
   function ps(v){return v*sf;}
-  function hexRgb(h){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return{r:isNaN(r)?170:r,g:isNaN(g)?170:g,b:isNaN(b)?170:b};}
-  function blendW(h,a){var c=hexRgb(h);return{r:Math.round(c.r*a+255*(1-a)),g:Math.round(c.g*a+255*(1-a)),b:Math.round(c.b*a+255*(1-a))};}
   function polyFill(pts,fr,fg,fb){
     var rel=pts.slice(1).map(function(p,i){return[ps(p[0]-pts[i][0]),ps(p[1]-pts[i][1])];});
     pdf.setFillColor(fr,fg,fb);pdf.setLineWidth(0);
@@ -172,17 +170,12 @@ function _doExportPDF(opts){
   // ── 6. Rooms ─────────────────────────────────────────────────────────────
   TK.rooms.forEach(function(r){
     var wt=(r.wallThickness||TK.wallThickness||0.1)*TK.scale,hwt=wt/2;
-    var type=(window.TK_ROOM_TYPES||[]).find(function(t){return t.id===r.type;})||{color:'#aaaaaa'};
     // Wall (outer rect)
     pdf.setFillColor(45,45,45);pdf.setLineWidth(0);
     pdf.rect(px(r.x-hwt),py(r.y-hwt),ps(r.w+wt),ps(r.h+wt),'F');
     // Inner white
     if(r.w>wt&&r.h>wt){
       pdf.setFillColor(255,255,255);
-      pdf.rect(px(r.x+hwt),py(r.y+hwt),ps(r.w-wt),ps(r.h-wt),'F');
-      // Color tint
-      var tint=blendW(type.color,0.22);
-      pdf.setFillColor(tint.r,tint.g,tint.b);
       pdf.rect(px(r.x+hwt),py(r.y+hwt),ps(r.w-wt),ps(r.h-wt),'F');
     }
   });

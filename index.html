@@ -154,11 +154,6 @@ body{display:flex;flex-direction:column;}
   letter-spacing:.07em;
   margin:8px 0 4px 2px;
 }
-#tek17-warnings{
-  margin-top:8px;
-  font-size:11px;
-  color:var(--hi);
-}
 
 /* STATUSBAR */
 #statusbar{
@@ -212,12 +207,19 @@ body{display:flex;flex-direction:column;}
     <option value="298">Passivhus 298mm</option>
     <option value="350">Grunnmur 350mm</option>
   </select>
-
   <button id="btnDraw" class="active" title="Teikn rom" onclick="setTool&&setTool('draw');setStatus&&setStatus('Teikn rom: klikk og dra')"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="1" width="12" height="10"/></svg></button>
   <button id="btnWall" title="Teikn vegg" onclick="setTool&&setTool('wall');setStatus&&setStatus('Teikn vegg: klikk og dra')"><svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><rect x="3" y="0" width="4" height="14"/></svg></button>
+
+  <div style="width:1px;height:22px;background:var(--border);flex-shrink:0;margin:0 2px"></div>
+
   <button title="Nytt rom med mål (D)" onclick="promptRoomDims&&promptRoomDims()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="3" width="12" height="10"/><line x1="7" y1="3" x2="7" y2="1"/><line x1="5" y1="1" x2="9" y2="1"/></svg></button>
+
+  <div style="width:1px;height:22px;background:var(--border);flex-shrink:0;margin:0 2px"></div>
+
   <button id="btnDoor" title="Plasser d&oslash;r" onclick="placeDoor&&placeDoor()"><svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="10" height="12"/><line x1="1" y1="1" x2="1" y2="13" stroke-width="2.5"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg></button>
   <button id="btnWindow" title="Plasser vindauge" onclick="placeWindow&&placeWindow()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="12"/><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg></button>
+
+  <div style="width:1px;height:22px;background:var(--border);flex-shrink:0;margin:0 2px"></div>
 
   <div class="vis-wrap">
     <button id="visBtn" title="Visnadsinnstillingar" onclick="(function(){var btn=document.getElementById('visBtn');var p=document.getElementById('visPanel');var open=p.style.display==='block';p.style.display=open?'none':'block';if(!open){var r=btn.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}})()">&#128065; &#9660;</button>
@@ -275,7 +277,6 @@ body{display:flex;flex-direction:column;}
       <div id="paneRooms" class="tp active">
         <div class="sidebar-section-title">Rom</div>
         <ul id="room-list"></ul>
-        <div id="tek17-warnings"></div>
       </div>
 
       <div id="paneWalls" class="tp">

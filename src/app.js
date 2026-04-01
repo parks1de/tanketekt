@@ -54,13 +54,11 @@ window.setTool=(tool)=>{
 };
 window.updateSidebar=()=>{
   const list=document.getElementById('room-list');if(!list)return;list.innerHTML='';
-  TK.rooms.forEach(r=>{const type=TK_ROOM_TYPES.find(t=>t.id===r.type)||TK_ROOM_TYPES[7];const area=roomArea(r);const warn=type.minArea>0&&parseFloat(area)<type.minArea?' ⚠️':'';const li=document.createElement('li');li.className='room-item'+(TK.selectedId===r.id?' selected':'');li.style.borderLeftColor=type.color;li.innerHTML='<div class="rname">'+r.name+warn+'</div><div class="rinfo">'+px2m(r.w)+'m × '+px2m(r.h)+'m | '+area+' m²</div>';
+  TK.rooms.forEach(r=>{const type=TK_ROOM_TYPES.find(t=>t.id===r.type)||TK_ROOM_TYPES[7];const area=roomArea(r);const li=document.createElement('li');li.className='room-item'+(TK.selectedId===r.id?' selected':'');li.style.borderLeftColor=type.color;li.innerHTML='<div class="rname">'+r.name+'</div><div class="rinfo">'+px2m(r.w)+'m × '+px2m(r.h)+'m | '+area+' m²</div>';
     li.onclick=()=>{TK.selectedId=r.id;TK.selectedType='room';updateSidebar();if(window.redraw)redraw()};
     const delBtn=document.createElement('button');delBtn.textContent='×';delBtn.title='Slett rom';delBtn.style='float:right;padding:0 5px;background:#e94560;border:none;color:white;border-radius:3px;cursor:pointer;font-size:11px;margin-top:2px';
     delBtn.onclick=e=>{e.stopPropagation();if(window.saveSnapshot)saveSnapshot();TK.rooms=TK.rooms.filter(x=>x.id!==r.id);if(TK.selectedId===r.id)TK.selectedId=null;updateSidebar();if(window.redraw)redraw()};
     li.appendChild(delBtn);list.appendChild(li)});
-  const wEl=document.getElementById('tek17-warnings');if(!wEl)return;wEl.innerHTML='';
-  TK.rooms.forEach(r=>{const type=TK_ROOM_TYPES.find(t=>t.id===r.type)||TK_ROOM_TYPES[7];if(type.minArea>0&&parseFloat(roomArea(r))<type.minArea){const d=document.createElement('div');d.className='tek17-warn';d.textContent='⚠️ '+r.name+': '+roomArea(r)+'m² (min '+type.minArea+'m² TEK17)';wEl.appendChild(d)}});
   const bra=TK.rooms.reduce((s,r)=>s+r.w*r.h/(TK.scale*TK.scale),0);
   const braEl=document.getElementById('braTotalt');if(braEl)braEl.textContent=bra>0?'BRA: '+bra.toFixed(1)+' m²':'';
 }
