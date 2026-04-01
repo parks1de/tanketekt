@@ -1,0 +1,287 @@
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --accent: #238636;
+  --hi: #e94560;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.tb-div {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+#floorplan-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  background: #ffffff;
+}
+
+canvas#floorplan {
+  flex: 1;
+  display: block;
+  background: #ffffff;
+}
+
+#sidebar {
+  width: 260px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+#statusbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+button {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 9px;
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+button.active {
+  background: var(--hi);
+  border-color: var(--hi);
+  color: white;
+}
+
+select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.btn-export {
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.btn-export:hover {
+  filter: brightness(1.15);
+}
+
+.vis-wrap {
+  position: relative;
+}
+
+#visPanel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  z-index: 200;
+  min-width: 150px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+#visPanel.open {
+  display: block;
+}
+
+#visPanel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#visPanel input[type=checkbox] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 7px 4px;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--hi);
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tab-pane {
+  display: none;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.room-item {
+  list-style: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border-left: 4px solid #888;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.room-item:hover,
+.room-item.selected {
+  background: rgba(35, 134, 54, 0.15);
+}
+
+.room-item .rname {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.room-item .rinfo {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.tek17-warn {
+  color: #e6a817;
+  font-size: 11px;
+  padding: 3px 0;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 280px;
+}
+
+.modal h2 {
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.modal label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.modal input,
+.modal select {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.modal-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}

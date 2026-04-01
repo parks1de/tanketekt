@@ -1,0 +1,17 @@
+{
+  "name": "tanketekt-agents",
+  "version": "1.0.0",
+  "description": "Claude API agents that build TankeTekt v.demo-001",
+  "type": "module",
+  "scripts": {
+    "manager": "node agent-manager.mjs",
+    "ui": "node agent-ui.mjs",
+    "export": "node agent-export.mjs",
+    "qa": "node agent-qa.mjs",
+    "build": "node agent-manager.mjs && node agent-ui.mjs && node agent-export.mjs && node agent-qa.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "dotenv": "^16.4.5"
+  }
+}
