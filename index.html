@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TankeTekt v.demo-002</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;
+  --surface:#161b22;
+  --border:#30363d;
+  --accent:#238636;
+  --hi:#e94560;
+  --text:#c9d1d9;
+  --muted:#8b949e;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;}
+body{display:flex;flex-direction:column;}
+
+/* TOOLBAR */
+#toolbar{
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  gap:4px;
+  padding:4px 8px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  min-height:40px;
+  flex-shrink:0;
+  overflow-x:auto;
+}
+#toolbar button,#toolbar select{
+  background:var(--bg);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:4px 10px;
+  cursor:pointer;
+  font-size:12px;
+  white-space:nowrap;
+  transition:background .15s,border-color .15s;
+}
+#toolbar button:hover{background:#21262d;border-color:#8b949e;}
+#toolbar button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+#toolbar select{padding:4px 6px;}
+#toolbar .spacer{flex:1;}
+#toolbar button.bexp{background:var(--accent);border-color:var(--accent);color:#fff;}
+#toolbar button.bexp:hover{background:#2ea043;border-color:#2ea043;}
+
+/* VIS WRAP */
+.vis-wrap{position:relative;display:inline-block;}
+#visBtn{white-space:nowrap;}
+#visPanel{
+  display:none;
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;
+  z-index:200;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:10px 14px;
+  min-width:160px;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+#visPanel.open{display:block;}
+#visPanel label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:3px 0;
+  cursor:pointer;
+  color:var(--text);
+  font-size:12px;
+}
+#visPanel input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+
+/* MAIN */
+#main{
+  display:flex;
+  flex-direction:row;
+  flex:1;
+  overflow:hidden;
+}
+#floorplan-wrap{
+  flex:1;
+  overflow:hidden;
+  display:flex;
+  position:relative;
+  background:#1a1f27;
+}
+#floorplan{
+  display:block;
+  cursor:crosshair;
+  background:#ffffff;
+}
+
+/* SIDEBAR */
+#sidebar{
+  width:260px;
+  min-width:220px;
+  max-width:300px;
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.tab-bar{
+  display:flex;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+  flex-shrink:0;
+}
+.tab{
+  flex:1;
+  background:transparent;
+  color:var(--muted);
+  border:none;
+  border-right:1px solid var(--border);
+  padding:7px 4px;
+  cursor:pointer;
+  font-size:11px;
+  transition:color .15s,background .15s;
+}
+.tab:last-child{border-right:none;}
+.tab:hover{color:var(--text);background:#21262d;}
+.tab.active{color:var(--text);background:var(--surface);border-bottom:2px solid var(--accent);}
+.tab-content{
+  flex:1;
+  overflow-y:auto;
+  padding:8px;
+}
+.tp{display:none;}
+.tp.active{display:block;}
+.tp ul{list-style:none;padding:0;margin:0;}
+.tp ul li{
+  padding:5px 6px;
+  border-radius:4px;
+  margin-bottom:2px;
+  font-size:12px;
+  cursor:pointer;
+  border:1px solid transparent;
+  transition:background .12s;
+}
+.tp ul li:hover{background:#21262d;border-color:var(--border);}
+.tp ul li.selected{background:#1c2d1e;border-color:var(--accent);}
+.sidebar-section-title{
+  color:var(--muted);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  margin:8px 0 4px 2px;
+}
+#tek17-warnings{
+  margin-top:8px;
+  font-size:11px;
+  color:var(--hi);
+}
+
+/* STATUSBAR */
+#statusbar{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:3px 12px;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  font-size:11px;
+  color:var(--muted);
+  flex-shrink:0;
+  min-height:24px;
+}
+#statusbar span{white-space:nowrap;}
+#statusMsg{color:var(--text);margin-left:auto;}
+
+/* SCROLLBARS */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#484f58;}
+/* MODALS */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;min-width:280px;max-width:420px;width:90%;}
+.modal h2{font-size:14px;margin-bottom:12px;color:var(--text);font-weight:600;}
+.modal label{display:block;font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em;}
+.modal input,.modal select{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;outline:none;}
+.modal input:focus,.modal select:focus{border-color:var(--accent);}
+.modal p{font-size:12px;margin:5px 0;color:var(--text);line-height:1.5;}
+.modal-btns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;}
+.modal-btns button{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 14px;cursor:pointer;font-size:12px;}
+.modal-btns button:hover{background:#21262d;}
+/* SIDEBAR ITEMS */
+.tp ul li{border-left:3px solid transparent;}
+.room-item .rname{font-weight:500;}
+.room-item .rinfo{color:var(--muted);font-size:11px;margin-top:1px;}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+
+  <select id="wallThicknessSelect" title="Veggtykkelse" onchange="if(window.setWallThickness)setWallThickness(parseInt(this.value))">
+    <option value="10">10 cm</option>
+    <option value="15" selected>15 cm</option>
+    <option value="20">20 cm</option>
+    <option value="25">25 cm</option>
+    <option value="30">30 cm</option>
+  </select>
+
+  <button id="btnDraw" class="active" onclick="setTool&&setTool('draw');setStatus&&setStatus('Teikn rom')">Teikn rom</button>
+  <button id="btnWall" onclick="setTool&&setTool('wall');setStatus&&setStatus('Teikn vegg')">Teikn vegg</button>
+  <button onclick="promptRoomDims&&promptRoomDims()">&#10011; Rom</button>
+  <button onclick="placeDoor&&placeDoor()">D&oslash;r</button>
+  <button onclick="placeWindow&&placeWindow()">Vindauge</button>
+
+  <div class="vis-wrap">
+    <button id="visBtn" onclick="(function(){var p=document.getElementById('visPanel');p.classList.toggle('open');})()">&#128065; Vis &#9660;</button>
+    <div id="visPanel">
+      <label><input type="checkbox" id="chkGrid" checked onchange="if(window.setVisibility)setVisibility('grid',this.checked)"> Rutenett</label>
+      <label><input type="checkbox" id="chkOuter" checked onchange="if(window.setVisibility)setVisibility('outer',this.checked)"> Ytre veggar</label>
+      <label><input type="checkbox" id="chkInner" checked onchange="if(window.setVisibility)setVisibility('inner',this.checked)"> Indre veggar</label>
+      <label><input type="checkbox" id="chkArea" checked onchange="if(window.setVisibility)setVisibility('area',this.checked)"> Areal</label>
+      <label><input type="checkbox" id="chkLabels" checked onchange="if(window.setVisibility)setVisibility('labels',this.checked)"> Etiketter</label>
+    </div>
+  </div>
+
+  <button onclick="if(window.undo)undo()">Angre</button>
+  <button onclick="if(window.redo)redo()">Gjer om</button>
+
+  <div class="spacer"></div>
+
+  <button onclick="if(window.zoomToFit)zoomToFit()">Tilpass</button>
+  <button onclick="if(window.newProject)newProject()">Ny</button>
+  <button onclick="if(window.saveProject)saveProject()">Lagre</button>
+  <input id="fileInput" type="file" accept=".json" style="display:none" onchange="if(window.loadProject)loadProject(this.files[0])">
+  <button onclick="document.getElementById('fileInput').click()">&#128194; &Aring;pne</button>
+  <button class="bexp" onclick="if(window.exportPNG)exportPNG()">PNG</button>
+  <button class="bexp" onclick="if(window.exportPDF)exportPDF()">PDF</button>
+  <button onclick="if(window.showHelpModal)showHelpModal()" title="Hjelp">?</button>
+
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- CANVAS AREA -->
+  <div id="floorplan-wrap">
+    <canvas id="floorplan" style="display:block;cursor:crosshair"></canvas>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab(this,'paneRooms')">Rom</button>
+      <button class="tab" onclick="switchTab(this,'paneWalls')">Veggar</button>
+      <button class="tab" onclick="switchTab(this,'paneElements')">D&oslash;r &amp; Vind.</button>
+    </div>
+    <div class="tab-content">
+
+      <div id="paneRooms" class="tp active">
+        <div class="sidebar-section-title">Rom</div>
+        <ul id="room-list"></ul>
+        <div id="tek17-warnings"></div>
+      </div>
+
+      <div id="paneWalls" class="tp">
+        <div class="sidebar-section-title">Veggar</div>
+        <ul id="wall-list"></ul>
+      </div>
+
+      <div id="paneElements" class="tp">
+        <div class="sidebar-section-title">D&oslash;rar &amp; Vindauge</div>
+        <ul id="element-list"></ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUSBAR -->
+<div id="statusbar">
+  <span id="scaleInfo">1:100</span>
+  <span id="coordInfo">x: 0 &nbsp; y: 0</span>
+  <span id="statusMsg">Klar</span>
+</div>
+
+<script>
+// Close vis panel when clicking outside
+document.addEventListener('click', function(e){
+  var wrap = document.querySelector('.vis-wrap');
+  var panel = document.getElementById('visPanel');
+  if(wrap && panel && !wrap.contains(e.target)){
+    panel.classList.remove('open');
+  }
+});
+
+// Tab switching
+function switchTab(btn, paneId){
+  var tabs = document.querySelectorAll('.tab-bar .tab');
+  var panes = document.querySelectorAll('.tp');
+  tabs.forEach(function(t){t.classList.remove('active');});
+  panes.forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  var pane = document.getElementById(paneId);
+  if(pane) pane.classList.add('active');
+}
+
+// Global helpers expected by toolbar
+function setStatus(msg){
+  var el = document.getElementById('statusMsg');
+  if(el) el.textContent = msg || '';
+}
+
+// Stubs so toolbar buttons don't throw before scripts load
+['setTool','setWallThickness','promptRoomDims','placeDoor','placeWindow',
+ 'setVisibility','undo','redo','zoomToFit','newProject','saveProject',
+ 'loadProject','exportPNG','exportPDF','showHelpModal'].forEach(function(fn){
+  if(!window[fn]) window[fn] = function(){ console.warn(fn + ' not yet loaded'); };
+});
+</script>
+
+<!-- APP SCRIPTS (load order required) -->
+<script src="src/app.js"></script>
+<script src="src/canvas.js"></script>
+<script src="src/drawing.js"></script>
+<script src="src/elements.js"></script>
+<script src="src/export.js"></script>
+
+</body>
+</html>
