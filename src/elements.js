@@ -20,8 +20,13 @@ window.hitTestAll=function(sx,sy){
 window.placeElementOnWall=function(sx,sy){
   var hit=window.hitTestAll(sx,sy);
   if(!hit){if(window.setStatus)setStatus('Ingen vegg funnen — klikk nærmare');return;}
-  if(window.saveSnapshot)saveSnapshot();
   var preset=TK.pendingElement&&TK.pendingElement.preset?TK.pendingElement.preset:DOOR_PRESETS[1];
+  // Prevent placement at wall corners — need at least half the element's width from each endpoint
+  var wallLen=0;
+  if(hit.type==='wall'){var ww=TK.walls.find(function(x){return x.id===hit.wallId;});if(ww)wallLen=Math.hypot(ww.x2-ww.x1,ww.y2-ww.y1)/TK.scale;}
+  else if(hit.type==='room'){var rr=TK.rooms.find(function(x){return x.id===hit.roomId;});if(rr)wallLen=(hit.edge==='top'||hit.edge==='bottom')?rr.w/TK.scale:rr.h/TK.scale;}
+  if(wallLen>0){var margin=preset.width/2/wallLen;if(hit.t<margin||hit.t>1-margin){if(window.setStatus)setStatus('For nær hjørnet — flytt lenger frå kanten');return;}}
+  if(window.saveSnapshot)saveSnapshot();
   var el={id:TK.nextId++,name:preset.name,width:preset.width,t:hit.t,swingDir:0};
   if(hit.type==='wall')el.wallId=hit.wallId;else{el.roomId=hit.roomId;el.edge=hit.edge;}
   if(TK.pendingElement&&TK.pendingElement.type==='window')TK.windows.push(el);else TK.doors.push(el);
@@ -87,8 +92,8 @@ window.checkTEK17=function(){
   }).filter(Boolean);
 };
 
-window.placeDoor=function(){TK.currentTool='door';TK.pendingElement={type:'door',preset:DOOR_PRESETS[1]};if(window.setStatus)setStatus('Klikk på vegg for å plassere dør — Esc for å avbryte');if(window.redraw)redraw();};
-window.placeWindow=function(){TK.currentTool='window';TK.pendingElement={type:'window',preset:WINDOW_PRESETS[1]};if(window.setStatus)setStatus('Klikk på vegg for å plassere vindauge — Esc for å avbryte');if(window.redraw)redraw();};
+window.placeDoor=function(){if(window.setTool)setTool('door');TK.pendingElement={type:'door',preset:DOOR_PRESETS[1]};if(window.setStatus)setStatus('Klikk på vegg for å plassere dør — Esc for å avbryte');};
+window.placeWindow=function(){if(window.setTool)setTool('window');TK.pendingElement={type:'window',preset:WINDOW_PRESETS[1]};if(window.setStatus)setStatus('Klikk på vegg for å plassere vindauge — Esc for å avbryte');};
 
 window.updateElementList=function(){
   var ul=document.getElementById('element-list');if(!ul)return;ul.innerHTML='';

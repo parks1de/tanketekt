@@ -55,9 +55,7 @@ body{display:flex;flex-direction:column;}
 #visBtn{white-space:nowrap;}
 #visPanel{
   display:none;
-  position:absolute;
-  top:calc(100% + 4px);
-  left:0;
+  position:fixed;
   z-index:200;
   background:var(--surface);
   border:1px solid var(--border);
@@ -216,11 +214,11 @@ body{display:flex;flex-direction:column;}
   <button id="btnDraw" class="active" onclick="setTool&&setTool('draw');setStatus&&setStatus('Teikn rom')">Teikn rom</button>
   <button id="btnWall" onclick="setTool&&setTool('wall');setStatus&&setStatus('Teikn vegg')">Teikn vegg</button>
   <button onclick="promptRoomDims&&promptRoomDims()">&#10011; Rom</button>
-  <button onclick="placeDoor&&placeDoor()">D&oslash;r</button>
-  <button onclick="placeWindow&&placeWindow()">Vindauge</button>
+  <button id="btnDoor" onclick="placeDoor&&placeDoor()">D&oslash;r</button>
+  <button id="btnWindow" onclick="placeWindow&&placeWindow()">Vindauge</button>
 
   <div class="vis-wrap">
-    <button id="visBtn" onclick="(function(){var p=document.getElementById('visPanel');p.classList.toggle('open');})()">&#128065; Vis &#9660;</button>
+    <button id="visBtn" onclick="(function(){var btn=document.getElementById('visBtn');var p=document.getElementById('visPanel');if(p.classList.toggle('open')){var r=btn.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}})()">&#128065; Vis &#9660;</button>
     <div id="visPanel">
       <label><input type="checkbox" id="chkGrid" checked onchange="if(window.setVisibility)setVisibility('grid',this.checked)"> Rutenett</label>
       <label><input type="checkbox" id="chkOuter" checked onchange="if(window.setVisibility)setVisibility('outer',this.checked)"> Ytre veggar</label>
